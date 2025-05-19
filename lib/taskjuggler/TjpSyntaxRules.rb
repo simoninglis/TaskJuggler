@@ -63,11 +63,11 @@ EOT
   end
 
   def rule_accountCredit
-    pattern(%w( !valDate $STRING !number ), lambda {
-      AccountCredit.new(@val[0], @val[1], @val[2])
+    pattern(%w( !valDate $STRING !optionalMinus !number ), lambda {
+      AccountCredit.new(@val[0], @val[1], (@val[2] ? -1 : 1) * @val[3])
     })
     arg(1, 'description', 'Short description of the transaction')
-    arg(2, 'amount', 'Amount to be booked.')
+    arg(3, 'amount', 'Amount to be booked.')
   end
 
   def rule_accountCredits
@@ -169,7 +169,8 @@ EOT
     })
     doc('credits', <<'EOT'
 Book the specified amounts to the account at the specified date. The
-desciptions are just used for documentary purposes.
+desciptions are just used for documentary purposes. Credit amounts may
+also be negative to represent outgoing payments.
 EOT
        )
     example('Account', '1')
