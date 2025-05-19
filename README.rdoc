@@ -88,6 +88,16 @@ browser is all you need for your work.
 
 Installation instructions can be found {here}[http://www.taskjuggler.org/tj3/manual/Installation.html#Installation].
 
+= Running with Docker
+
+You can build a Docker image for TaskJuggler:
+
+  docker build -t taskjuggler .
+
+Run TaskJuggler inside the container:
+
+  docker run --rm -v "$PWD":/data taskjuggler tj3 <options>
+
 = Introduction and Tutorial
 
 To learn more about how to use TaskJuggler please see the {user
