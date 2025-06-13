@@ -57,7 +57,7 @@ task "T4" {
 nikureport "niku" {
   formats niku, html, csv
   headline "This is a test report"
-  period 2010-02-01-8:00 - %{2010-03-01 -6h}
+  period 2010-02-01-8:00 - 2010-02-28-18:00
   timeoff "vacations" "Vacation time"
   # Depending on your Clarity configuration, you may need to add this
   # CustomInformation section in the report. It's raw XML code and

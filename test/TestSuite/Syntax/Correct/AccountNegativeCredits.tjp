@@ -1,0 +1,51 @@
+project negative_credits "Negative Credits Test" 2025-01-01 +2m {
+  timezone "Europe/Berlin"
+  currency "EUR"
+}
+
+# Test account with negative credits (refunds/reversals)
+account revenue "Revenue" {
+  credits 2025-01-02 "Initial payment" 10000.0,
+          2025-01-10 "Customer refund" -1500.0,
+          2025-01-15 "Additional payment" 5000.0,
+          2025-01-20 "Partial refund" -750.0,
+          2025-01-25 "Final payment" 2000.0
+}
+
+# Test account with only negative credits
+account refunds "Refunds Issued" {
+  credits 2025-01-05 "Refund #001" -500.0,
+          2025-01-12 "Refund #002" -750.0,
+          2025-01-18 "Refund #003" -1200.0
+}
+
+# Test mixed positive and negative with decimals
+account adjustments "Financial Adjustments" {
+  credits 2025-01-02 "Opening balance" 5000.0,
+          2025-01-05 "Positive adjustment" 123.45,
+          2025-01-10 "Negative adjustment" -456.78,
+          2025-01-15 "Rounding adjustment" -0.01,
+          2025-01-20 "Final adjustment" -999.99
+}
+
+# Test edge cases
+account edge_cases "Edge Case Tests" {
+  credits 2025-01-02 "Large positive" 999999.99,
+          2025-01-02 "Large negative" -888888.88,
+          2025-01-03 "Small positive" 0.01,
+          2025-01-04 "Small negative" -0.01,
+          2025-01-05 "Zero credit" 0.0
+}
+
+balance revenue refunds
+
+# Simple task to make the project valid
+task project "Project" {
+  start 2025-01-02
+  duration 30d
+}
+
+accountreport "negative_credit_test" {
+  formats html
+  columns name, balance, monthly
+}

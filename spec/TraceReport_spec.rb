@@ -19,7 +19,7 @@ require 'taskjuggler/apps/Tj3'
 class TaskJuggler
 
 
-  describe TraceReport do
+  describe "TraceReport" do
 
     include StdIoWrapper
 
@@ -69,7 +69,7 @@ EOT
       before = File.read(@tf)
       tj3(@prj)
       after = File.read(@tf)
-      before.should == after
+      expect(before).to eq(after)
     end
 
     it 'should add a new line for another day' do
@@ -103,13 +103,13 @@ EOT
       res = stdIoWrapper(prj) do
         Tj3.new.main(%w( --silent --add-trace . ))
       end
-      res.stdOut.should == ''
-      res.stdErr.should == ''
-      res.returnValue.should == 0
+      expect(res.stdOut).to eq('')
+      expect(res.stdErr).to eq('')
+      expect(res.returnValue).to eq(0)
     end
 
     def checkCSV(file, ref)
-     File.read(file).should == ref
+     expect(File.read(file)).to eq(ref)
     end
 
   end

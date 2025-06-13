@@ -19,12 +19,12 @@ require 'taskjuggler/apps/Tj3TsReceiver'
 require 'taskjuggler/apps/Tj3TsSummary'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
 
-  describe TimeSheets do
+  describe "TimeSheets" do
 
     include DaemonControl
 
@@ -188,62 +188,62 @@ EOT
       cd(@pwd)
     end
 
-    describe TimeSheetSender do
+    describe "TimeSheetSender" do
 
       it 'should have generated 2 mails' do
-        @tss_mails.length.should == 2
+        expect(@tss_mails.length).to eq(2)
       end
 
       it 'should have email sender foo@example.com' do
         @tss_mails.each do |mail|
-          mail.from[0].should == 'foo@example.com'
+          expect(mail.from[0]).to eq('foo@example.com')
         end
       end
 
       it 'should have proper email receivers' do
-        @tss_mails[0].to[0].should == 'r1@example.com'
-        @tss_mails[1].to[0].should == 'r2@example.com'
+        expect(@tss_mails[0].to[0]).to eq('r1@example.com')
+        expect(@tss_mails[1].to[0]).to eq('r2@example.com')
       end
 
       it 'should generate properly dated headers' do
-        countLines(@tss_mails[0].parts[0].decoded,
+        expect(countLines(@tss_mails[0].parts[0].decoded,
                    'timesheet r1 2011-03-14-00:00-+0000 - ' +
-                   '2011-03-21-00:00-+0000').should == 1
-        countLines(@tss_mails[1].parts[0].decoded,
+                   '2011-03-21-00:00-+0000')).to eq(1)
+        expect(countLines(@tss_mails[1].parts[0].decoded,
                    'timesheet r2 2011-03-14-00:00-+0000 - ' +
-                   '2011-03-21-00:00-+0000').should == 1
+                   '2011-03-21-00:00-+0000')).to eq(1)
       end
 
       it 'should have matching timesheets in body and attachment' do
         @tss_mails.each do |mail|
           bodySheet = extractTimeSheet(mail.parts[0].decoded)
           attachedSheet = extractTimeSheet(mail.part[1].decoded).tr("\r", '')
-          bodySheet.should == attachedSheet
+          expect(bodySheet).to eq(attachedSheet)
         end
       end
 
     end
 
-    describe TimeSheetReceiver do
+    describe "TimeSheetReceiver" do
 
       it 'should have generated 2 mails' do
-        @tsr_mails.length.should == 2
+        expect(@tsr_mails.length).to eq(2)
       end
 
       it 'should have email sender foo@example.com' do
         @tsr_mails.each do |mail|
-          mail.from[0].should == 'foo@example.com'
+          expect(mail.from[0]).to eq('foo@example.com')
         end
       end
 
       it 'should have proper email receivers' do
-        @tsr_mails[0].to[0].should == 'r1@example.com'
-        @tsr_mails[1].to[0].should == 'r2@example.com'
+        expect(@tsr_mails[0].to[0]).to eq('r1@example.com')
+        expect(@tsr_mails[1].to[0]).to eq('r2@example.com')
       end
 
       it 'should have stored timesheets' do
-        @sheet1.should == File.read('TimeSheets/2011-03-21/r1_2011-03-21.tji')
-        @sheet2.should == File.read('TimeSheets/2011-03-21/r2_2011-03-21.tji')
+        expect(@sheet1).to eq(File.read('TimeSheets/2011-03-21/r1_2011-03-21.tji'))
+        expect(@sheet2).to eq(File.read('TimeSheets/2011-03-21/r2_2011-03-21.tji'))
       end
 
       it 'should report an error on bad keyword' do
@@ -270,31 +270,31 @@ EOT
         res = stdIoWrapper(mail.to_s) do
           Tj3TsReceiver.new.main(%w( --dryrun --silent ))
         end
-        countLines(res.stdErr,
-                   /\.\:5\: Error\: Unexpected token 'wirk' found\./).should == 1
-        res.returnValue.should == 1
+        expect(countLines(res.stdErr,
+                   /\.\:5\: Error\: Unexpected token 'wirk' found\./)).to eq(1)
+        expect(res.returnValue).to eq(1)
       end
 
     end
 
-    describe TimeSheetSummary do
+    describe "TimeSheetSummary" do
 
       it 'should have generated 4 mails' do
-        @sum_mails.length.should == 4
+        expect(@sum_mails.length).to eq(4)
       end
 
       it 'should have proper email receivers' do
-        @sum_mails[0].to[0].should == 'archive@example.com'
-        @sum_mails[1].to[0].should == 'archive@example.com'
-        @sum_mails[2].to[0].should == 'archive@example.com'
-        @sum_mails[3].to[0].should == 'crew@example.com'
+        expect(@sum_mails[0].to[0]).to eq('archive@example.com')
+        expect(@sum_mails[1].to[0]).to eq('archive@example.com')
+        expect(@sum_mails[2].to[0]).to eq('archive@example.com')
+        expect(@sum_mails[3].to[0]).to eq('crew@example.com')
       end
 
       it 'should have proper email senders' do
-        @sum_mails[0].from[0].should == 'r1@example.com'
-        @sum_mails[1].from[0].should == 'r2@example.com'
-        @sum_mails[2].from[0].should == 'foo@example.com'
-        @sum_mails[3].from[0].should == 'foo@example.com'
+        expect(@sum_mails[0].from[0]).to eq('r1@example.com')
+        expect(@sum_mails[1].from[0]).to eq('r2@example.com')
+        expect(@sum_mails[2].from[0]).to eq('foo@example.com')
+        expect(@sum_mails[3].from[0]).to eq('foo@example.com')
       end
 
     end

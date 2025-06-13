@@ -16,6 +16,7 @@ $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'test/unit'
 
+require 'taskjuggler/TjTime'
 require 'taskjuggler/ProjectFileScanner'
 require 'taskjuggler/MessageHandler'
 
@@ -125,6 +126,58 @@ EOT
       [:DATE, TjTime.new('2035-12-31-23:59:59'), 2],
       [:DATE, TjTime.new('2010-08-11-23:10'), 3],
       [:eof, '<END>', 4]
+    ]
+
+    check(text, ref)
+  end
+
+  def test_negative_numbers
+    text = <<'EOT'
+-42
+-3.14
+-0.5
+42
+3.14
+0.5
+-1000
+-123.456
+EOT
+    ref = [
+      [:LITERAL, "-", 1],
+      [:INTEGER, 42, 1],
+      [:LITERAL, "-", 2],
+      [:FLOAT, 3.14, 2],
+      [:LITERAL, "-", 3],
+      [:FLOAT, 0.5, 3],
+      [:INTEGER, 42, 4],
+      [:FLOAT, 3.14, 5],
+      [:FLOAT, 0.5, 6],
+      [:LITERAL, "-", 7],
+      [:INTEGER, 1000, 7],
+      [:LITERAL, "-", 8],
+      [:FLOAT, 123.456, 8],
+      [:eof, '<END>', 9]
+    ]
+
+    check(text, ref)
+  end
+
+  def test_negative_with_dates
+    # Ensure negative numbers don't interfere with date parsing
+    text = <<'EOT'
+2025-01-01
+-500
+2025-01-15-12:30
+-42.5
+EOT
+    ref = [
+      [:DATE, TjTime.new('2025-01-01'), 1],
+      [:LITERAL, "-", 2],
+      [:INTEGER, 500, 2],
+      [:DATE, TjTime.new('2025-01-15-12:30'), 3],
+      [:LITERAL, "-", 4],
+      [:FLOAT, 42.5, 4],
+      [:eof, '<END>', 5]
     ]
 
     check(text, ref)

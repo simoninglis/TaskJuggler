@@ -17,7 +17,7 @@ require 'taskjuggler/daemon/ProjectBroker'
 require 'support/spec_helper'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
@@ -61,19 +61,19 @@ class TaskJuggler
 
       it "should fail with bad authentication key" do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.apiVersion('bad key', 1).should == 0
+          expect(@pbi.apiVersion('bad key', 1)).to eq(0)
         end
       end
 
       it "should pass with correct authentication key" do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.apiVersion(@authKey, 1).should == 1
+          expect(@pbi.apiVersion(@authKey, 1)).to eq(1)
         end
       end
 
       it "should fail with wrong API version", :ruby => 1.9 do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.apiVersion(@authKey, 0).should == -1
+          expect(@pbi.apiVersion(@authKey, 0)).to eq(-1)
         end
       end
 
@@ -83,20 +83,20 @@ class TaskJuggler
 
       it "should fail with bad authentication key" do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.command('bad key', :status, []).should be false
+          expect(@pbi.command('bad key', :status, [])).to be false
         end
       end
 
       it "should support 'status'" do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.command(@authKey, :status, []).should match \
+          expect(@pbi.command(@authKey, :status, [])).to match \
             /.*No projects registered.*/
         end
       end
 
       it "should support 'terminate'" do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.command(@authKey, :stop, []).should be_nil
+          expect(@pbi.command(@authKey, :stop, [])).to be_nil
         end
       end
 
@@ -106,14 +106,14 @@ class TaskJuggler
           stdOut = StringIO.new
           stdErr = StringIO.new
           args = [ Dir.getwd, [ '.' ], stdOut, stdErr, stdIn, true ]
-          @pbi.command(@authKey, :addProject, args).should be true
-          stdErr.string.should be_empty
+          expect(@pbi.command(@authKey, :addProject, args)).to be true
+          expect(stdErr.string).to be_empty
 
           # Can't remove non-existing project bar
-          @pbi.command(@authKey, :removeProject, 'bar').should be false
-          @pbi.command(@authKey, :removeProject, 'foo').should be true
+          expect(@pbi.command(@authKey, :removeProject, 'bar')).to be false
+          expect(@pbi.command(@authKey, :removeProject, 'foo')).to be true
           # Can't remove foo twice
-          @pbi.command(@authKey, :removeProject, 'foo').should be false
+          expect(@pbi.command(@authKey, :removeProject, 'foo')).to be false
         end
       end
 
@@ -123,7 +123,7 @@ class TaskJuggler
 
       it "should fail with bad authentication key" do
         TaskJuggler::runBroker(@pb, @authKey) do
-          @pbi.updateState('bad key', 'foo', 'foo', :status, true).should \
+          expect(@pbi.updateState('bad key', 'foo', 'foo', :status, true)).to \
             be false
         end
       end

@@ -1,0 +1,93 @@
+project negative_charges "Negative Charges Test" 2025-01-01 +1m {
+  timezone "Europe/Berlin"
+  currency "USD"
+}
+
+account costs "Project Costs"
+account revenue "Revenue"
+account discounts "Discounts Applied"
+
+resource developer "Developer" {
+  rate 200.0
+}
+
+resource consultant "Consultant" {
+  rate 300.0
+}
+
+# Test tasks with negative charges
+task project "Project with Discounts" {
+  start 2025-01-02
+  
+  task development "Development Work" {
+    effort 10d
+    allocate developer
+    chargeset costs
+  }
+  
+  task discount_applied "Volume Discount" {
+    depends !development
+    duration 0d
+    chargeset costs
+    charge -500.0 onend  # Negative charge as discount
+  }
+  
+  task consulting "Consulting Work" {
+    depends !development
+    effort 5d
+    allocate consultant
+    chargeset revenue
+    charge 1000.0 onstart   # Initial charge
+    charge -200.0 onend     # Partial refund
+  }
+  
+  task multiple_negatives "Multiple Negative Charges" {
+    start 2025-01-20
+    duration 5d
+    chargeset discounts
+    charge -100.0 onstart
+    charge -150.0 onend
+  }
+  
+  task mixed_charges "Mixed Positive and Negative" {
+    start 2025-01-25
+    duration 3d
+    chargeset costs
+    charge 500.0 onstart
+    charge -300.0 onend
+    charge 100.0 perday
+  }
+}
+
+# Test edge cases with charges
+task edge_cases "Charge Edge Cases" {
+  start 2025-01-15
+  
+  task large_negative "Large Negative Charge" {
+    duration 1d
+    chargeset costs
+    charge -99999.99 onend
+  }
+  
+  task small_negative "Small Negative Charge" {
+    duration 1d
+    chargeset costs
+    charge -0.01 onend
+  }
+  
+  task zero_charge "Zero Charge" {
+    duration 1d
+    chargeset costs
+    charge 0.0 onend
+  }
+}
+
+taskreport "charge_test" {
+  formats html
+  columns name, start, end, cost
+}
+
+accountreport "account_summary" {
+  formats html
+  columns name, balance
+}

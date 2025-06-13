@@ -19,14 +19,14 @@ require 'taskjuggler/ICalendar'
 require 'support/spec_helper.rb'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
 
-  describe ICalendar do
+  describe "ICalendar" do
 
-    describe ICalendar::Component do
+    describe "ICalendar::Component" do
 
       it 'should quote properly' do
         c = ICalendar::Component.new(nil, '', nil, nil)
@@ -40,7 +40,7 @@ class TaskJuggler
           [ "foo\nbar", 'foo\nbar' ],
           [ 'a"b"c', 'a\"b\"c' ]
         ].each do |i, o|
-          c.send('quoted', i).should == o
+          expect(c.send('quoted', i)).to eq(o)
         end
       end
 

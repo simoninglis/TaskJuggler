@@ -63,11 +63,11 @@ EOT
   end
 
   def rule_accountCredit
-    pattern(%w( !valDate $STRING !number ), lambda {
-      AccountCredit.new(@val[0], @val[1], @val[2])
+    pattern(%w( !valDate $STRING !optionalMinus !number ), lambda {
+      AccountCredit.new(@val[0], @val[1], (@val[2] ? -1 : 1) * @val[3])
     })
     arg(1, 'description', 'Short description of the transaction')
-    arg(2, 'amount', 'Amount to be booked.')
+    arg(2, 'amount', 'Amount to be booked. Can be negative.')
   end
 
   def rule_accountCredits
@@ -6281,7 +6281,7 @@ EOT
     also(%w( booking.resource ))
     example('Booking')
 
-    pattern(%w( _charge !number !chargeMode ), lambda {
+    pattern(%w( _charge !optionalMinus !number !chargeMode ), lambda {
       checkContainer('charge')
 
       if @property['chargeset', @scenarioIdx].empty?
@@ -6289,22 +6289,23 @@ EOT
               'The task does not have a chargeset defined.',
               @sourceFileInfo[0], @property)
       end
-      case @val[2]
+      baseAmount = (@val[1] ? -1 : 1) * @val[2]
+      case @val[3]
       when 'onstart'
         mode = :onStart
-        amount = @val[1]
+        amount = baseAmount
       when 'onend'
         mode = :onEnd
-        amount = @val[1]
+        amount = baseAmount
       when 'perhour'
         mode = :perDiem
-        amount = @val[1] * 24
+        amount = baseAmount * 24
       when 'perday'
         mode = :perDiem
-        amount = @val[1]
+        amount = baseAmount
       when 'perweek'
         mode = :perDiem
-        amount = @val[1] / 7.0
+        amount = baseAmount / 7.0
       end
       @property['charge', @scenarioIdx] +=
         [ Charge.new(amount, mode, @property, @scenarioIdx) ]

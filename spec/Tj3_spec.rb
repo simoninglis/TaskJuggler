@@ -17,12 +17,12 @@ require 'taskjuggler/StdIoWrapper'
 require 'taskjuggler/apps/Tj3'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
 
-  describe Tj3 do
+  describe "Tj3" do
 
     include StdIoWrapper
 
@@ -31,8 +31,8 @@ class TaskJuggler
       res = stdIoWrapper(prj) do
         Tj3.new.main(%w( --silent --no-reports . ))
       end
-      res.stdErr.should == ''
-      res.returnValue.should == 0
+      expect(res.stdErr).to eq('')
+      expect(res.returnValue).to eq(0)
     end
 
   end

@@ -19,7 +19,7 @@ resource team "Team" {
            special 2012-01-12 +1d
   }
   resource r2 "R2" {
-    leaveallowances annual 2012-06-01 -10d
+    leaveallowances annual 2012-06-01 - 10d
     leaves sick 2012-01-04 +2d,
            unpaid 2012-01-10 +3d
   }

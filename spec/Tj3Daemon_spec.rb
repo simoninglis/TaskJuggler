@@ -16,12 +16,12 @@ require 'rubygems'
 require 'support/DaemonControl'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
 
-  describe Tj3Daemon do
+  describe "Tj3Daemon" do
 
     include DaemonControl
 
@@ -39,9 +39,9 @@ class TaskJuggler
       res = stdIoWrapper do
         Tj3Client.new.main(%w( --unsafe --silent status ))
       end
-      res.returnValue.should == 0
-      res.stdErr.should == ''
-      res.stdOut.should match /No projects registered/
+      expect(res.returnValue).to eq(0)
+      expect(res.stdErr).to eq('')
+      expect(res.stdOut).to match /No projects registered/
     end
 
     it 'should be able to load a project' do
@@ -49,8 +49,8 @@ class TaskJuggler
       res = stdIoWrapper(prj) do
         Tj3Client.new.main(%w( --unsafe add . ))
       end
-      res.returnValue.should == 0
-      res.stdErr.should match /Project\(s\) \. added/
+      expect(res.returnValue).to eq(0)
+      expect(res.stdErr).to match /Project\(s\) \. added/
     end
 
   end

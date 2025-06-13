@@ -17,12 +17,12 @@ require 'rubygems'
 require 'taskjuggler/IntervalList'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
 
-  describe IntervalList do
+  describe "IntervalList" do
 
     before(:all) do
       @t0 = TjTime.new('2011-01-01').freeze
@@ -53,29 +53,29 @@ class TaskJuggler
 
       it 'should add a new interval' do
         @il << @i0_1
-        @il.should == [ @i0_1 ]
+        expect(@il).to eq([ @i0_1 ])
       end
 
       it 'Intervals should be added in ascending order' do
         @il << @i1_2
-        lambda { @il << @i0_1 }.should raise_error RuntimeError
+        expect { @il << @i0_1 }.to raise_error RuntimeError
       end
 
       it 'should merge adjecent intervals on add' do
         @il << @i0_1
         @il << @i1_2
-        @il.should == [ @i0_2 ]
+        expect(@il).to eq([ @i0_2 ])
       end
 
       it 'should not merge non-adjecent intervals on add' do
         @il << @i0_1
         @il << @i2_3
-        @il.should == [ @i0_1, @i2_3 ]
+        expect(@il).to eq([ @i0_1, @i2_3 ])
       end
 
       it 'operator concatenation should work' do
         @il << @i_01 << @i2_3 << @i4_5
-        @il.length.should == 3
+        expect(@il.length).to eq(3)
       end
 
     end
@@ -85,56 +85,56 @@ class TaskJuggler
       it 'without overlap should be empty' do
         il1 = IntervalList.new([ @i0_1 ])
         il2 = IntervalList.new([ @i1_2 ])
-        (il1 & il2).should be_empty
-        (il2 & il1).should be_empty
+        expect((il1 & il2)).to be_empty
+        expect((il2 & il1)).to be_empty
       end
 
       it 'with empty list should be empty' do
         il1 = IntervalList.new([ @i0_1 ])
         il2 = IntervalList.new([ ])
-        (il1 & il2).should be_empty
-        (il2 & il1).should be_empty
+        expect((il1 & il2)).to be_empty
+        expect((il2 & il1)).to be_empty
       end
 
       it 'with self should be self' do
         il = IntervalList.new([ @i0_1 ])
-        (il & il).should == il
+        expect((il & il)).to eq(il)
       end
 
       it 'with partial overlap should be overlap' do
         il1 = IntervalList.new([ @i0_2 ])
         il2 = IntervalList.new([ @i1_3 ])
         il3 = IntervalList.new([ @i1_2 ])
-        (il1 & il2).should == il3
-        (il2 & il1).should == il3
+        expect((il1 & il2)).to eq(il3)
+        expect((il2 & il1)).to eq(il3)
       end
 
       it 'with center inclusion should be inclusion' do
         il1 = IntervalList.new([ @i0_3, @i3_6 ])
         il2 = IntervalList.new([ @i1_2, @i4_5 ])
-        (il1 & il2).should == il2
-        (il2 & il1).should == il2
+        expect((il1 & il2)).to eq(il2)
+        expect((il2 & il1)).to eq(il2)
       end
 
       it 'with left inclusion should be inclusion' do
         il1 = IntervalList.new([ @i1_3, @i4_6 ])
         il2 = IntervalList.new([ @i1_2, @i4_5 ])
-        (il1 & il2).should == il2
-        (il2 & il1).should == il2
+        expect((il1 & il2)).to eq(il2)
+        expect((il2 & il1)).to eq(il2)
       end
 
       it 'with right inclusion should be inclusion' do
         il1 = IntervalList.new([ @i1_3, @i4_6 ])
         il2 = IntervalList.new([ @i2_3, @i5_6 ])
-        (il1 & il2).should == il2
-        (il2 & il1).should == il2
+        expect((il1 & il2)).to eq(il2)
+        expect((il2 & il1)).to eq(il2)
       end
 
       it 'with adjecent intervals should be empty' do
         il1 = IntervalList.new([ @i0_1, @i2_3 ])
         il2 = IntervalList.new([ @i1_2, @i3_4 ])
-        (il1 & il2).should be_empty
-        (il2 & il1).should be_empty
+        expect((il1 & il2)).to be_empty
+        expect((il2 & il1)).to be_empty
       end
 
     end

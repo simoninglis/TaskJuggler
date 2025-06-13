@@ -1,0 +1,77 @@
+project mixed_credits "Mixed Credits and Charges Test" 2025-01-01 +2m {
+  timezone "Europe/Berlin"
+  currency "GBP"
+}
+
+# Test accounts with mixed positive and negative credits
+account income "Income Stream" {
+  credits 2025-01-02 "Initial funding" 50000.0,
+          2025-01-05 "Client payment" 15000.0,
+          2025-01-10 "Refund to client" -3000.0,
+          2025-01-15 "Additional payment" 8000.0,
+          2025-01-20 "Discount given" -1500.0,
+          2025-01-25 "Interest earned" 125.50,
+          2025-01-30 "Bank fee" -50.0
+}
+
+account expenses "Operating Expenses" {
+  credits 2025-01-02 "Budget allocation" 40000.0,
+          2025-01-08 "Vendor refund" -2500.0,
+          2025-01-16 "Budget cut" -5000.0,
+          2025-01-24 "Emergency fund" 3000.0
+}
+
+# Test with resources and mixed charges
+resource senior "Senior Dev" { rate 250.0 }
+resource junior "Junior Dev" { rate 150.0 }
+
+task project "Mixed Credits Project" {
+  start 2025-01-02
+  chargeset expenses
+  
+  task phase1 "Phase 1 - Regular Work" {
+    effort 15d
+    allocate senior
+  }
+  
+  task phase2 "Phase 2 - Discounted Work" {
+    depends !phase1
+    effort 10d
+    allocate junior
+    charge -1000.0 onstart  # Early payment discount
+  }
+  
+  task adjustment "Financial Adjustment" {
+    depends !phase2
+    duration 1d
+    chargeset income
+    charge -2000.0 onstart  # Refund
+    charge 2500.0 onend     # Correction
+  }
+}
+
+# Test balance with accounts having negative credits
+account reconciliation "Reconciliation Account" {
+  credits 2025-02-01 "Month-end reconciliation" -500.0
+}
+
+balance income expenses
+
+# Test with dates and negative values
+account dated "Date-based Transactions" {
+  credits 2025-01-02-00:00:00 "Start of period" 10000.0,
+          2025-01-15-12:00:00 "Mid-month adjustment" -1234.56,
+          2025-01-31-23:00:00 "End of month" -789.01
+}
+
+# Reports to verify calculations
+accountreport "comprehensive_report" {
+  formats html
+  columns no, name, balance, weekly, monthly
+}
+
+taskreport "task_summary" {
+  formats html
+  columns no, name, start, end, effort, cost
+  loadunit days
+}

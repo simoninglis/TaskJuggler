@@ -91,10 +91,10 @@ class TaskJuggler
         # A time of day
         [ :TIME, /\d{1,2}:\d{2}/, :tjp, method('to_time') ],
 
-        # A floating point number (e. g. 3.143)
+        # A floating point number (e. g. 3.143 or -3.143)
         [ :FLOAT, /\d*\.\d+/, :tjp, method('to_f') ],
 
-        # An integer number
+        # An integer number (e.g. 42 or -42), but not if followed by <-
         [ :INTEGER, /\d+/, :tjp, method('to_i') ],
 
         # Multi line string enclosed with double quotes. The string may

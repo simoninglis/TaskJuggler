@@ -18,7 +18,7 @@ require 'taskjuggler/apps/Tj3SsSender'
 require 'taskjuggler/apps/Tj3SsReceiver'
 
 RSpec.configure do |config|
-  config.expect_with(:rspec) { |c| c.syntax = :should }
+  config.expect_with(:rspec) { |c| c.syntax = :expect }
 end
 
 class TaskJuggler
@@ -26,7 +26,7 @@ class TaskJuggler
   class StatusSheetTest
   end
 
-  describe StatusSheetTest do
+  describe "StatusSheetTest" do
 
     include DaemonControl
 
@@ -206,56 +206,56 @@ EOT
     it 'is just a dummy' do
     end
 
-    describe StatusSheetSender do
+    describe "StatusSheetSender" do
 
       it 'should have generated 1 mail' do
-        @sss_mails.length.should == 1
+        expect(@sss_mails.length).to eq(1)
       end
 
       it 'should have email sender foo@example.com' do
         @sss_mails.each do |mail|
-          mail.from[0].should == 'foo@example.com'
+          expect(mail.from[0]).to eq('foo@example.com')
         end
       end
 
       it 'should have proper email receivers' do
-        @sss_mails[0].to[0].should == 'boss@example.com'
+        expect(@sss_mails[0].to[0]).to eq('boss@example.com')
       end
 
       it 'should generate properly dated headers' do
-        countLines(@sss_mails[0].parts[0].decoded,
+        expect(countLines(@sss_mails[0].parts[0].decoded,
                    'statussheet boss 2011-03-16-00:00-+0000 - ' +
-                   '2011-03-23-00:00-+0000').should == 1
+                   '2011-03-23-00:00-+0000')).to eq(1)
       end
 
       it 'should have matching status sheets in body and attachment' do
         @sss_mails.each do |mail|
           bodySheet = extractStatusSheet(mail.parts[0].decoded)
           attachedSheet = extractStatusSheet(mail.part[1].decoded).tr("\r", '')
-          bodySheet.should == attachedSheet
+          expect(bodySheet).to eq(attachedSheet)
         end
       end
 
     end
 
-    describe StatusSheetReceiver do
+    describe "StatusSheetReceiver" do
 
       it 'should have generated 1 mails' do
-        @ssr_mails.length.should == 1
+        expect(@ssr_mails.length).to eq(1)
       end
 
       it 'should have email sender foo@example.com' do
         @ssr_mails.each do |mail|
-          mail.from[0].should == 'foo@example.com'
+          expect(mail.from[0]).to eq('foo@example.com')
         end
       end
 
       it 'should have email receivers boss@example.com' do
-        @ssr_mails[0].to[0].should == 'boss@example.com'
+        expect(@ssr_mails[0].to[0]).to eq('boss@example.com')
       end
 
       it 'should have stored status sheet' do
-        @sheet.should == File.read('StatusSheets/2011-03-23/boss_2011-03-23.tji')
+        expect(@sheet).to eq(File.read('StatusSheets/2011-03-23/boss_2011-03-23.tji'))
       end
 
     end
