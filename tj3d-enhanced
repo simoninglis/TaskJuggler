@@ -1,0 +1,6 @@
+#!/bin/bash
+# TaskJuggler Enhanced Daemon - Wrapper script for tj3d
+# Usage: tj3d-enhanced [options]
+
+# Execute TaskJuggler daemon with Ruby library path (no directory change)
+exec ruby -I /home/singlis/work/TaskJuggler/lib /home/singlis/work/TaskJuggler/bin/tj3d "$@"

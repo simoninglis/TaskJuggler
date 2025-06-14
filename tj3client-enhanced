@@ -1,0 +1,6 @@
+#!/bin/bash
+# TaskJuggler Enhanced Client - Wrapper script for tj3client
+# Usage: tj3client-enhanced [options]
+
+# Execute TaskJuggler client with Ruby library path (no directory change)
+exec ruby -I /home/singlis/work/TaskJuggler/lib /home/singlis/work/TaskJuggler/bin/tj3client "$@"

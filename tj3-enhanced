@@ -1,0 +1,6 @@
+#!/bin/bash
+# TaskJuggler Enhanced - Wrapper script for enhanced TaskJuggler with negative number support
+# Usage: tj3-enhanced [options] project.tjp
+
+# Execute TaskJuggler with Ruby library path (no directory change)
+exec ruby -I /home/singlis/work/TaskJuggler/lib /home/singlis/work/TaskJuggler/bin/tj3 "$@"
