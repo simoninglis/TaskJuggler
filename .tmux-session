@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+SESSION="TaskJuggler"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+tmux has-session -t $SESSION 2>/dev/null
+if [ $? != 0 ]; then
+    tmux new-session -d -s $SESSION -c "$SCRIPT_DIR" -n nvim
+    tmux new-window -t $SESSION:1 -n claude -c "$SCRIPT_DIR"
+    tmux new-window -t $SESSION:2 -n shell -c "$SCRIPT_DIR"
+    tmux new-window -t $SESSION:3 -n server -c "$SCRIPT_DIR"
+    
+    tmux send-keys -t $SESSION:0 'nvim .' C-m
+fi
+
+tmux attach -t $SESSION:0

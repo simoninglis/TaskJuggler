@@ -74,14 +74,19 @@ rake unittest                      # Unit tests only
 rake spec                         # RSpec tests only
 ```
 
+## Repository Information
+- **This is a fork**: Always commit and push to this fork, NOT the upstream repository
+- **Fork remote**: Your fork's remote repository (check with `git remote -v`)
+- **Upstream**: https://github.com/taskjuggler/TaskJuggler (original project - do not push directly)
+
 ## Branch Status
 - **Current branch**: `fix-rspec-compatibility`
-- **Commit**: `c1726169` - Contains negative number support and RSpec migration
+- **Latest commit**: Contains negative number support, RSpec migration, and TJP include support
 - **Status**: Ready for pull request to upstream project
 - **All tests**: ✅ Passing (184 total)
 
-## Contributing Back
-To contribute these changes to the main TaskJuggler project:
-1. Fork https://github.com/taskjuggler/TaskJuggler to your GitHub account
-2. Push the `fix-rspec-compatibility` branch to your fork
-3. Create a Pull Request with the negative number support and RSpec migration features
+## Contributing Back to Upstream
+When ready to contribute changes to the main TaskJuggler project:
+1. Ensure all commits are in your fork
+2. Create a Pull Request from your fork to the upstream repository
+3. Include description of negative number support, RSpec migration, and TJP include features
