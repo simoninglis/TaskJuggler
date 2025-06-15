@@ -1952,18 +1952,18 @@ EOT
 
   def rule_includeFileName
     pattern(%w( $STRING ), lambda {
-      unless @val[0][-4, 4] == '.tji'
-        error('bad_include_suffix', "Included files must have a '.tji'" +
-                                    "extension: '#{@val[0]}'",
+      unless @val[0][-4, 4] == '.tji' || @val[0][-4, 4] == '.tjp'
+        error('bad_include_suffix', 
+              "Included files must have a '.tji' or '.tjp' extension: '#{@val[0]}'",
               @sourceFileInfo[0])
       end
       pushFileStack
       @val[0]
     })
     arg(0, 'filename', <<'EOT'
-Name of the file to include. This must have a ''''.tji'''' extension. The name
-may have an absolute or relative path. You need to use ''''/'''' characters to
-separate directories.
+Name of the file to include. This must have a ''''.tji'''' or ''''.tjp'''' 
+extension. The name may have an absolute or relative path. You need to use 
+''''/'''' characters to separate directories.
 EOT
        )
   end
