@@ -2,5 +2,19 @@
 # TaskJuggler Enhanced Client - Wrapper script for tj3client
 # Usage: tj3client-enhanced [options]
 
-# Execute TaskJuggler client with Ruby library path (no directory change)
-exec ruby -I /home/singlis/work/TaskJuggler/lib /home/singlis/work/TaskJuggler/bin/tj3client "$@"
+# Get the directory where this script is located (resolving symlinks)
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+# Setup Ruby environment for user-installed gems
+export GEM_HOME="$HOME/.gem/ruby/3.4.0"
+export GEM_PATH="$GEM_HOME:/snap/ruby/current/lib/ruby/gems/3.4.0"
+
+# Add all gem lib directories to RUBYLIB
+export RUBYLIB=""
+for gemdir in "$GEM_HOME/gems/"*/lib; do
+    RUBYLIB="$gemdir:$RUBYLIB"
+done
+export RUBYLIB="$SCRIPT_DIR/lib:$RUBYLIB"
+
+# Execute TaskJuggler client
+exec ruby "$SCRIPT_DIR/bin/tj3client" "$@"

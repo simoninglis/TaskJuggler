@@ -1,6 +1,6 @@
 #!/bin/bash
-# TaskJuggler Enhanced - Wrapper script for enhanced TaskJuggler with negative number support
-# Usage: tj3-enhanced [options] project.tjp
+# TaskJuggler Enhanced Manual - Wrapper script for tj3man
+# Usage: tj3man-enhanced [property]
 
 # Get the directory where this script is located (resolving symlinks)
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
@@ -16,5 +16,5 @@ for gemdir in "$GEM_HOME/gems/"*/lib; do
 done
 export RUBYLIB="$SCRIPT_DIR/lib:$RUBYLIB"
 
-# Execute TaskJuggler
-exec ruby "$SCRIPT_DIR/bin/tj3" "$@"
+# Execute TaskJuggler manual
+exec ruby "$SCRIPT_DIR/bin/tj3man" "$@"

@@ -47,15 +47,20 @@ TaskJuggler uses a scanner/parser architecture:
 snap install ruby --channel=3.4/stable
 
 # Install TaskJuggler Enhanced commands locally
-# (Creates symlinks in ~/.local/bin)
-mkdir -p ~/.local/bin
-ln -sf $PWD/tj3-enhanced ~/.local/bin/tj3-enhanced
-ln -sf $PWD/tj3-enhanced ~/.local/bin/tj3
-ln -sf $PWD/tj3client-enhanced ~/.local/bin/tj3client-enhanced
-ln -sf $PWD/tj3d-enhanced ~/.local/bin/tj3d-enhanced
+# (This will automatically install required Ruby gems)
+./install-local.sh
 
-# Ensure ~/.local/bin is in PATH (add to ~/.bashrc if needed)
+# If prompted, add ~/.local/bin to PATH in ~/.bashrc:
 export PATH="$HOME/.local/bin:$PATH"
+
+# Reload shell configuration
+source ~/.bashrc
+```
+
+### Uninstallation
+```bash
+# Remove all TaskJuggler Enhanced symlinks
+./uninstall-local.sh
 ```
 
 ### Usage
@@ -65,6 +70,11 @@ tj3 project.tjp                    # Process project file
 tj3-enhanced project.tjp           # Same as above
 tj3client-enhanced status          # Client commands
 tj3d-enhanced                      # Daemon
+tj3man-enhanced account            # View manual for 'account' property
+
+# The install script creates both versions:
+# - tj3-enhanced, tj3client-enhanced, tj3d-enhanced, tj3man-enhanced
+# - tj3, tj3client, tj3d, tj3man (aliases without -enhanced suffix)
 
 # Test negative numbers example
 tj3 test_negative_example.tjp --no-reports
