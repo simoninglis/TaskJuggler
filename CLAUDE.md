@@ -14,6 +14,7 @@ For development workflow and contribution guidelines, see WORKFLOW.md.
 - **RSpec Migration**: Upgraded test suite from RSpec 2.5 to 3.x for Ruby 3.4+ compatibility
 - **Test Infrastructure**: All 184 tests now passing (116 unit + 68 RSpec)
 - **TJP Include Support**: Fixed restriction that prevented .tjp files from including other .tjp files (now both .tjp and .tji extensions are allowed)
+- **Version Identifier**: Changed version to 3.8.1-DEV to clearly indicate this is a development fork
 
 ### Implementation Details
 - **Grammar-level approach**: Uses `optionalMinus` pattern for clean separation
