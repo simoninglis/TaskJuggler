@@ -89,14 +89,17 @@ rake spec                         # RSpec tests only
 
 ## Repository Information
 - **This is a fork**: Always commit and push to this fork, NOT the upstream repository
-- **Fork remote**: Your fork's remote repository (check with `git remote -v`)
+- **Fork URL**: https://github.com/simoninglis/TaskJuggler
 - **Upstream**: https://github.com/taskjuggler/TaskJuggler (original project - do not push directly)
+- **Version**: 3.8.1-DEV (upstream is 3.8.1)
 
-## Branch Status
-- **Current branch**: `fix-rspec-compatibility`
-- **Latest commit**: Contains negative number support, RSpec migration, and TJP include support
-- **Status**: Ready for pull request to upstream project
-- **All tests**: ✅ Passing (184 total)
+## Branch Organization
+- **dev**: Main development branch with all enhancements
+- **fix-rspec-compatibility**: Feature branch containing negative number support, RSpec migration, and TJP include support (ready for PR to upstream)
+- **master**: Tracks upstream master branch
+
+## Test Status
+- **All tests**: ✅ Passing (184 total - 116 unit + 68 RSpec)
 
 ## Contributing Back to Upstream
 When ready to contribute changes to the main TaskJuggler project:
