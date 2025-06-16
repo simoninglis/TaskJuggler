@@ -99,6 +99,10 @@ like
 from such a {project
 description}[http://www.taskjuggler.org/tj3/examples/Tutorial/tutorial.tjp].
 
+= Development
+
+For information about contributing to TaskJuggler and the development workflow, please see the WORKFLOW.md file in the root directory.
+
 = Getting Help and reporting Bugs
 
 There are several mailing list for TaskJuggler users and developers.

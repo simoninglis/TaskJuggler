@@ -5,6 +5,8 @@
 Original project: https://github.com/taskjuggler/TaskJuggler  
 License: GPL v2
 
+For development workflow and contribution guidelines, see WORKFLOW.md.
+
 ## Current Work
 
 ### ✅ Completed Features
