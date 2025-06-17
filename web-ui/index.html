@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskJuggler - Interactive Gantt Chart</title>
+    
+    <!-- DHTMLX Gantt CSS -->
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css" type="text/css">
+    
+    <!-- Custom styles -->
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .controls {
+            margin: 10px 0;
+        }
+        
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background: #0056b3;
+        }
+        
+        .search-container {
+            display: inline-block;
+            margin-right: 15px;
+            vertical-align: top;
+        }
+        
+        .search-container input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 200px;
+        }
+        
+        .search-container input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        
+        .clear-search {
+            background: #6c757d !important;
+            margin-left: 5px;
+        }
+        
+        .clear-search:hover {
+            background: #545b62 !important;
+        }
+        
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
+        }
+        
+        .gantt-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        #gantt_here {
+            width: 100%;
+            height: 600px;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Mode toggle switch styles */
+        .mode-indicator {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
+        
+        .mode-label {
+            margin-right: 8px;
+            font-weight: 500;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin: 0 10px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #28a745;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #dc3545;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .mode-text {
+            font-weight: 500;
+            min-width: 80px;
+            color: #28a745;
+        }
+        
+        .mode-text.edit-mode {
+            color: #dc3545;
+        }
+        
+        /* Selected task styling */
+        .gantt_task_row.gantt_selected,
+        .gantt_row.gantt_selected {
+            background-color: #e3f2fd !important;
+        }
+        
+        .gantt_task_line.gantt_selected {
+            box-shadow: 0 0 0 2px #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TaskJuggler - Interactive Gantt Chart Prototype</h1>
+        <p>Modern web interface for TaskJuggler project management with DHTMLX Gantt</p>
+        
+        <div class="controls">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search tasks..." 
+                       onkeyup="handleSearchKeyUp(event)" />
+                <button class="clear-search" onclick="clearSearch()">Clear</button>
+            </div>
+            <div class="mode-indicator">
+                <span class="mode-label">Mode:</span>
+                <label class="switch">
+                    <input type="checkbox" id="editModeToggle" onchange="toggleReadOnly()">
+                    <span class="slider"></span>
+                </label>
+                <span class="mode-text" id="modeText">View Only</span>
+            </div>
+            <button onclick="zoomIn()">Zoom In</button>
+            <button onclick="zoomOut()">Zoom Out</button>
+            <button onclick="toggleGrid()">Toggle Grid</button>
+            <button onclick="exportData()">Export JSON</button>
+            <!-- Date filter placeholder - to be implemented -->
+            <!--
+            <div class="date-filter" style="display: inline-block; margin-left: 15px;">
+                <label>Filter dates:</label>
+                <input type="date" id="startDateFilter" placeholder="Start date">
+                <span> to </span>
+                <input type="date" id="endDateFilter" placeholder="End date">
+                <button onclick="applyDateFilter()">Apply</button>
+                <button onclick="clearDateFilter()">Clear</button>
+            </div>
+            -->
+        </div>
+    </div>
+    
+    <div class="gantt-container">
+        <div id="gantt_here" tabindex="0"></div>
+    </div>
+    
+    <div class="status">
+        <h3>Status</h3>
+        <div id="status">Ready. Loading sample TaskJuggler data...</div>
+        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+            <strong>Keyboard shortcuts:</strong>
+            Ctrl+F: Search | 
+            ↑/↓: Navigate | 
+            ←/→: Collapse/Expand | 
+            Space: Toggle expand | 
+            +/-: Zoom | 
+            Enter: Edit (in edit mode)
+        </div>
+    </div>
+
+    <!-- DHTMLX Gantt JS -->
+    <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
+    
+    <!-- Our application script -->
+    <script>
+        // Configure DHTMLX Gantt
+        gantt.config.date_format = "%Y-%m-%d";
+        gantt.config.scale_unit = "day";
+        gantt.config.date_scale = "%d %M";
+        gantt.config.scale_height = 50;
+        gantt.config.min_column_width = 60;
+        
+        // Enable features
+        gantt.plugins({
+            tooltip: true,
+            marker: true,
+            keyboard_navigation: true
+        });
+        
+        // Add today line
+        gantt.addMarker({
+            start_date: new Date(),
+            css: "today",
+            text: "Today",
+            title: "Today: " + gantt.date.date_to_str(gantt.config.date_format)(new Date())
+        });
+        
+        // Configure task text template for search highlighting
+        gantt.templates.task_text = function(start, end, task) {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput ? searchInput.value.trim() : '';
+            
+            if (searchTerm && task.text) {
+                // Case-insensitive search with proper escaping
+                const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+                return task.text.replace(regex, '<span class="highlight">$1</span>');
+            }
+            return task.text;
+        };
+        
+        // Initialize the gantt chart
+        gantt.config.readonly = true;  // Start in read-only mode
+        gantt.init("gantt_here");
+        
+        // Global state
+        let isReadOnly = true;  // Start in read-only mode for safety
+        let currentZoom = "day";
+        let originalData = null;
+        let searchTimeout = null;
+        let isFiltered = false;
+        
+        // Load TaskJuggler data
+        function loadTaskJugglerData() {
+            updateStatus("Loading TaskJuggler data...");
+            
+            fetch('data/sample-gantt.json')
+                .then(response => response.json())
+                .then(data => {
+                    updateStatus("Converting TaskJuggler data to DHTMLX format...");
+                    console.log("Raw data loaded:", data);
+                    
+                    // Convert TaskJuggler format to DHTMLX format
+                    const dhtmlxData = convertTaskJugglerToDHMLX(data);
+                    console.log("Converted DHTMLX data:", dhtmlxData);
+                    
+                    // Store original data for filtering
+                    originalData = dhtmlxData;
+                    
+                    // Load data into gantt
+                    gantt.parse(dhtmlxData);
+                    
+                    updateStatus(`Loaded ${data.tasks.length} tasks from TaskJuggler project: ${data.project}`);
+                    
+                    // Set initial focus to the gantt chart and select first task
+                    setTimeout(() => {
+                        const tasks = gantt.getTaskByTime();
+                        if (tasks.length > 0) {
+                            gantt.selectTask(tasks[0].id);
+                            gantt.showTask(tasks[0].id);
+                        }
+                        // Focus the gantt container
+                        document.getElementById('gantt_here').focus();
+                    }, 100);
+                })
+                .catch(error => {
+                    console.error('Error loading data:', error);
+                    updateStatus("Error loading TaskJuggler data: " + error.message);
+                });
+        }
+        
+        // Convert TaskJuggler JSON to DHTMLX format
+        function convertTaskJugglerToDHMLX(tjData) {
+            const tasks = tjData.tasks.map(task => ({
+                id: task.id,
+                text: task.name,
+                start_date: task.start,
+                end_date: task.end,
+                duration: task.duration,
+                progress: task.progress / 100,
+                type: task.type === 'milestone' ? gantt.config.types.milestone :
+                      task.type === 'container' ? gantt.config.types.project : 
+                      gantt.config.types.task,
+                parent: getParentId(task.id),
+                dependencies: task.dependencies ? task.dependencies.join(',') : ''
+            }));
+            
+            return {
+                data: tasks,
+                links: generateLinks(tjData.tasks)
+            };
+        }
+        
+        // Extract parent ID from hierarchical task ID
+        function getParentId(taskId) {
+            const parts = taskId.split('.');
+            if (parts.length <= 1) return 0; // Root task
+            return parts.slice(0, -1).join('.');
+        }
+        
+        // Generate dependency links
+        function generateLinks(tasks) {
+            const links = [];
+            let linkId = 1;
+            
+            tasks.forEach(task => {
+                task.dependencies.forEach(depId => {
+                    links.push({
+                        id: linkId++,
+                        source: depId,
+                        target: task.id,
+                        type: "0" // finish-to-start
+                    });
+                });
+            });
+            
+            return links;
+        }
+        
+        // Control functions
+        
+        // Search and filter functions
+        function handleSearchKeyUp(event) {
+            if (event.key === 'Enter') {
+                // On Enter, immediately search and focus first match
+                clearTimeout(searchTimeout);
+                const searchTerm = document.getElementById('searchInput').value.trim();
+                filterTasks(searchTerm, true); // true = focus first match
+            } else {
+                // Otherwise, use debounced search
+                debounceSearch();
+            }
+        }
+        
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = document.getElementById('searchInput').value.trim();
+                filterTasks(searchTerm, false); // false = don't focus
+            }, 300); // 300ms delay for debouncing
+        }
+        
+        function filterTasks(searchTerm, focusFirstMatch = false) {
+            if (!originalData) return;
+            
+            if (!searchTerm) {
+                clearSearch();
+                return;
+            }
+            
+            updateStatus(`Searching for: "${searchTerm}"`);
+            
+            // Find all tasks that match the search term
+            const matchingTaskIds = new Set();
+            const allTasks = originalData.data;
+            let firstMatchId = null;
+            
+            // First pass: find direct matches
+            allTasks.forEach(task => {
+                if (task.text.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    matchingTaskIds.add(task.id);
+                    if (!firstMatchId) {
+                        firstMatchId = task.id;
+                    }
+                }
+            });
+            
+            // Second pass: build inclusion set with hierarchical context
+            const tasksToShow = new Set();
+            
+            matchingTaskIds.forEach(taskId => {
+                const task = allTasks.find(t => t.id === taskId);
+                if (!task) return;
+                
+                // Include the matching task
+                tasksToShow.add(taskId);
+                
+                // Include all children if this task matches
+                addAllChildren(taskId, allTasks, tasksToShow);
+                
+                // Include parent hierarchy
+                addParentHierarchy(taskId, allTasks, tasksToShow);
+            });
+            
+            // Filter data and update gantt
+            const filteredData = {
+                data: allTasks.filter(task => tasksToShow.has(task.id)),
+                links: originalData.links.filter(link => 
+                    tasksToShow.has(link.source) && tasksToShow.has(link.target)
+                )
+            };
+            
+            // Don't modify the actual task text yet - just for display
+            // We'll handle highlighting in the gantt template instead
+            
+            gantt.clearAll();
+            gantt.parse(filteredData);
+            
+            // Auto-expand all parent tasks to show matches
+            filteredData.data.forEach(task => {
+                if (task.type === gantt.config.types.project || 
+                    task.type === undefined) { // container tasks
+                    gantt.open(task.id);
+                }
+            });
+            
+            // Force re-render to update highlighting
+            gantt.render();
+            
+            // Focus first match if requested
+            if (focusFirstMatch && firstMatchId) {
+                setTimeout(() => {
+                    gantt.selectTask(firstMatchId);
+                    gantt.showTask(firstMatchId);
+                    document.getElementById('gantt_here').focus();
+                }, 100);
+            }
+            
+            isFiltered = true;
+            updateStatus(`Found ${matchingTaskIds.size} matching tasks, showing ${filteredData.data.length} total tasks with context`);
+        }
+        
+        function addAllChildren(parentId, allTasks, includeSet) {
+            allTasks.forEach(task => {
+                if (task.parent === parentId) {
+                    includeSet.add(task.id);
+                    addAllChildren(task.id, allTasks, includeSet); // Recursive
+                }
+            });
+        }
+        
+        function addParentHierarchy(taskId, allTasks, includeSet) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (!task || !task.parent || task.parent === 0) return;
+            
+            includeSet.add(task.parent);
+            addParentHierarchy(task.parent, allTasks, includeSet); // Recursive
+        }
+        
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        function clearSearch() {
+            if (!originalData) return;
+            
+            document.getElementById('searchInput').value = '';
+            
+            // Just reload the original data
+            gantt.clearAll();
+            gantt.parse(originalData);
+            
+            isFiltered = false;
+            updateStatus("Search cleared, showing all tasks");
+        }
+        
+        function toggleReadOnly() {
+            isReadOnly = !isReadOnly;
+            gantt.config.readonly = isReadOnly;
+            gantt.render();
+            
+            // Update visual indicators
+            const modeText = document.getElementById('modeText');
+            const checkbox = document.getElementById('editModeToggle');
+            
+            if (isReadOnly) {
+                modeText.textContent = 'View Only';
+                modeText.classList.remove('edit-mode');
+                checkbox.checked = false;
+            } else {
+                modeText.textContent = 'Edit Mode';
+                modeText.classList.add('edit-mode');
+                checkbox.checked = true;
+            }
+            
+            updateStatus(isReadOnly ? "Switched to read-only mode" : "Switched to edit mode");
+        }
+        
+        function zoomIn() {
+            const zooms = ["hour", "day", "week", "month", "quarter", "year"];
+            const currentIndex = zooms.indexOf(currentZoom);
+            if (currentIndex > 0) {
+                currentZoom = zooms[currentIndex - 1];
+                setZoom(currentZoom);
+            }
+        }
+        
+        function zoomOut() {
+            const zooms = ["hour", "day", "week", "month", "quarter", "year"];
+            const currentIndex = zooms.indexOf(currentZoom);
+            if (currentIndex < zooms.length - 1) {
+                currentZoom = zooms[currentIndex + 1];
+                setZoom(currentZoom);
+            }
+        }
+        
+        function setZoom(zoom) {
+            switch(zoom) {
+                case "hour":
+                    gantt.config.scale_unit = "day";
+                    gantt.config.date_scale = "%d %M";
+                    gantt.config.subscales = [
+                        {unit: "hour", step: 1, date: "%H:%i"}
+                    ];
+                    break;
+                case "day":
+                    gantt.config.scale_unit = "day";
+                    gantt.config.date_scale = "%d %M";
+                    gantt.config.subscales = [];
+                    break;
+                case "week":
+                    gantt.config.scale_unit = "week";
+                    gantt.config.date_scale = "Week #%W";
+                    gantt.config.subscales = [
+                        {unit: "day", step: 1, date: "%d %M"}
+                    ];
+                    break;
+                case "month":
+                    gantt.config.scale_unit = "month";
+                    gantt.config.date_scale = "%F %Y";
+                    gantt.config.subscales = [
+                        {unit: "week", step: 1, date: "#%W"}
+                    ];
+                    break;
+                case "quarter":
+                    gantt.config.scale_unit = "quarter";
+                    gantt.config.date_scale = "Q%q %Y";
+                    gantt.config.subscales = [
+                        {unit: "month", step: 1, date: "%M"}
+                    ];
+                    break;
+                case "year":
+                    gantt.config.scale_unit = "year";
+                    gantt.config.date_scale = "%Y";
+                    gantt.config.subscales = [
+                        {unit: "quarter", step: 1, date: "Q%q"}
+                    ];
+                    break;
+            }
+            gantt.render();
+            updateStatus(`Zoom level: ${zoom}`);
+        }
+        
+        function toggleGrid() {
+            gantt.config.show_grid = !gantt.config.show_grid;
+            gantt.render();
+            updateStatus(gantt.config.show_grid ? "Grid shown" : "Grid hidden");
+        }
+        
+        function exportData() {
+            const data = gantt.serialize();
+            console.log("Current gantt data:", data);
+            updateStatus("Data exported to console. Check browser developer tools.");
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = new Date().toLocaleTimeString() + ": " + message;
+        }
+        
+        // Event handlers for Claude Code integration (placeholder)
+        gantt.attachEvent("onAfterTaskAdd", function(id, task) {
+            updateStatus(`Task added: ${task.text}`);
+            // TODO: Send to Claude Code for TJP file update
+        });
+        
+        gantt.attachEvent("onAfterTaskUpdate", function(id, task) {
+            updateStatus(`Task updated: ${task.text}`);
+            // TODO: Send to Claude Code for TJP file update  
+        });
+        
+        gantt.attachEvent("onAfterTaskDelete", function(id, task) {
+            updateStatus(`Task deleted: ${task.text}`);
+            // TODO: Send to Claude Code for TJP file update
+        });
+        
+        gantt.attachEvent("onAfterTaskDrag", function(id, mode, task) {
+            updateStatus(`Task moved: ${task.text}`);
+            // TODO: Send to Claude Code for TJP file update
+        });
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Don't handle shortcuts when typing in search
+            const searchInput = document.getElementById('searchInput');
+            const isSearchFocused = document.activeElement === searchInput;
+            
+            // Ctrl+F or Cmd+F to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+                return;
+            }
+            
+            // Escape to clear search when search is focused
+            if (e.key === 'Escape' && isSearchFocused) {
+                clearSearch();
+                searchInput.blur();
+                return;
+            }
+            
+            // Don't process other shortcuts if search is focused
+            if (isSearchFocused) return;
+            
+            // Get currently selected task
+            const selectedId = gantt.getSelectedId();
+            
+            // Zoom shortcuts
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                zoomIn();
+            } else if (e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                zoomOut();
+            }
+            
+            // Navigation shortcuts
+            else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectPreviousTask();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectNextTask();
+            }
+            
+            // Expand/Collapse shortcuts
+            else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (selectedId && gantt.hasChild(selectedId)) {
+                    gantt.open(selectedId);
+                }
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (selectedId && gantt.hasChild(selectedId)) {
+                    gantt.close(selectedId);
+                }
+            }
+            
+            // Space to toggle expand/collapse
+            else if (e.key === ' ') {
+                e.preventDefault();
+                if (selectedId && gantt.hasChild(selectedId)) {
+                    if (gantt.getState().opened[selectedId]) {
+                        gantt.close(selectedId);
+                    } else {
+                        gantt.open(selectedId);
+                    }
+                }
+            }
+            
+            // Enter to edit task (if in edit mode)
+            else if (e.key === 'Enter' && !isReadOnly) {
+                e.preventDefault();
+                if (selectedId) {
+                    gantt.showLightbox(selectedId);
+                }
+            }
+        });
+        
+        // Helper functions for navigation
+        function selectPreviousTask() {
+            const tasks = gantt.getTaskByTime();
+            const selectedId = gantt.getSelectedId();
+            
+            if (!selectedId && tasks.length > 0) {
+                gantt.selectTask(tasks[0].id);
+                gantt.showTask(tasks[0].id);
+                return;
+            }
+            
+            let currentIndex = tasks.findIndex(t => t.id === selectedId);
+            if (currentIndex > 0) {
+                gantt.selectTask(tasks[currentIndex - 1].id);
+                gantt.showTask(tasks[currentIndex - 1].id);
+            }
+        }
+        
+        function selectNextTask() {
+            const tasks = gantt.getTaskByTime();
+            const selectedId = gantt.getSelectedId();
+            
+            if (!selectedId && tasks.length > 0) {
+                gantt.selectTask(tasks[0].id);
+                gantt.showTask(tasks[0].id);
+                return;
+            }
+            
+            let currentIndex = tasks.findIndex(t => t.id === selectedId);
+            if (currentIndex < tasks.length - 1) {
+                gantt.selectTask(tasks[currentIndex + 1].id);
+                gantt.showTask(tasks[currentIndex + 1].id);
+            }
+        }
+        
+        // Future date filtering functions (to be implemented)
+        /*
+        function applyDateFilter() {
+            const startDate = document.getElementById('startDateFilter').value;
+            const endDate = document.getElementById('endDateFilter').value;
+            
+            // Filter tasks based on date range
+            // - Tasks that start, end, or span the date range
+            // - Maintain parent/child relationships
+            // - Update gantt display
+        }
+        
+        function clearDateFilter() {
+            document.getElementById('startDateFilter').value = '';
+            document.getElementById('endDateFilter').value = '';
+            // Restore original data
+        }
+        */
+        
+        // Load initial data
+        loadTaskJugglerData();
+    </script>
+</body>
+</html>

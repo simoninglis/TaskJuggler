@@ -1,0 +1,168 @@
+{
+  "project": "Test Gantt Chart",
+  "start": "2025-01-01",
+  "end": "2025-04-01",
+  "scale": "day",
+  "tasks": [
+    {
+      "id": "project",
+      "name": "Web Application",
+      "type": "container",
+      "start": "2025-01-01",
+      "end": "2025-03-17",
+      "duration": 75,
+      "progress": 0,
+      "dependencies": []
+    },
+    {
+      "id": "project.design",
+      "name": "Design Phase",
+      "type": "task",
+      "start": "2025-01-01",
+      "end": "2025-01-06",
+      "duration": 5,
+      "progress": 100,
+      "dependencies": []
+    },
+    {
+      "id": "project.development",
+      "name": "Development",
+      "type": "container",
+      "start": "2025-01-07",
+      "end": "2025-02-21",
+      "duration": 45,
+      "progress": 60,
+      "dependencies": ["project.design"]
+    },
+    {
+      "id": "project.development.backend",
+      "name": "Backend Development",
+      "type": "task",
+      "start": "2025-01-07",
+      "end": "2025-01-28",
+      "duration": 21,
+      "progress": 100,
+      "dependencies": ["project.design"]
+    },
+    {
+      "id": "project.development.frontend",
+      "name": "Frontend Development",
+      "type": "task",
+      "start": "2025-01-29",
+      "end": "2025-02-21",
+      "duration": 24,
+      "progress": 20,
+      "dependencies": ["project.development.backend"]
+    },
+    {
+      "id": "project.testing",
+      "name": "Quality Assurance",
+      "type": "container",
+      "start": "2025-02-22",
+      "end": "2025-03-15",
+      "duration": 22,
+      "progress": 0,
+      "dependencies": ["project.development"]
+    },
+    {
+      "id": "project.testing.integration",
+      "name": "Integration Verification",
+      "type": "container",
+      "start": "2025-02-22",
+      "end": "2025-03-01",
+      "duration": 8,
+      "progress": 0,
+      "dependencies": ["project.development"]
+    },
+    {
+      "id": "project.testing.integration.backend",
+      "name": "Backend API Integration",
+      "type": "task",
+      "start": "2025-02-22",
+      "end": "2025-02-25",
+      "duration": 4,
+      "progress": 0,
+      "dependencies": ["project.development.backend"]
+    },
+    {
+      "id": "project.testing.integration.frontend",
+      "name": "Frontend Component Integration",
+      "type": "task",
+      "start": "2025-02-22",
+      "end": "2025-02-25",
+      "duration": 4,
+      "progress": 0,
+      "dependencies": ["project.development.frontend"]
+    },
+    {
+      "id": "project.testing.integration.sap",
+      "name": "SAP Connector Validation",
+      "type": "task",
+      "start": "2025-02-26",
+      "end": "2025-03-01",
+      "duration": 4,
+      "progress": 0,
+      "dependencies": ["project.testing.integration.backend"]
+    },
+    {
+      "id": "project.testing.system",
+      "name": "System Validation",
+      "type": "container",
+      "start": "2025-03-02",
+      "end": "2025-03-10",
+      "duration": 9,
+      "progress": 0,
+      "dependencies": ["project.testing.integration"]
+    },
+    {
+      "id": "project.testing.system.performance",
+      "name": "Performance Benchmarking",
+      "type": "task",
+      "start": "2025-03-02",
+      "end": "2025-03-05",
+      "duration": 4,
+      "progress": 0,
+      "dependencies": ["project.testing.integration"]
+    },
+    {
+      "id": "project.testing.system.security",
+      "name": "Security Audit",
+      "type": "task",
+      "start": "2025-03-02",
+      "end": "2025-03-05",
+      "duration": 4,
+      "progress": 0,
+      "dependencies": ["project.testing.integration"]
+    },
+    {
+      "id": "project.testing.system.endtoend",
+      "name": "End-to-End Scenarios",
+      "type": "task",
+      "start": "2025-03-06",
+      "end": "2025-03-10",
+      "duration": 5,
+      "progress": 0,
+      "dependencies": ["project.testing.system.performance", "project.testing.system.security"]
+    },
+    {
+      "id": "project.testing.uat",
+      "name": "User Acceptance",
+      "type": "task",
+      "start": "2025-03-11",
+      "end": "2025-03-15",
+      "duration": 5,
+      "progress": 0,
+      "dependencies": ["project.testing.system"]
+    },
+    {
+      "id": "project.deployment",
+      "name": "Deployment",
+      "type": "task",
+      "start": "2025-03-16",
+      "end": "2025-03-17",
+      "duration": 2,
+      "progress": 0,
+      "dependencies": ["project.testing"]
+    }
+  ]
+}
