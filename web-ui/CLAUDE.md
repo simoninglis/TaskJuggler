@@ -210,6 +210,7 @@ The command palette (Ctrl+K) provides the following commands:
 
 ### View Commands
 - **Toggle dark mode**: Switch between light and dark theme
+- **Toggle fullscreen**: Enter or exit fullscreen mode
 - **Zoom to hour view**: Switch timeline to hourly scale
 - **Zoom to day view**: Switch timeline to daily scale
 - **Zoom to week view**: Switch timeline to weekly scale
@@ -240,6 +241,26 @@ poetry run python test_simple_navigation.py
 poetry run python test_keyboard_help.py
 poetry run python test_help_palette_interaction.py
 ```
+
+## Responsive Layout
+
+The web UI now features a fully responsive layout that adapts to different screen sizes:
+
+### Layout Features
+- **Full viewport usage**: Gantt chart uses all available browser space
+- **Collapsible status section**: Click header to toggle, state saved in localStorage
+- **Dynamic resizing**: Automatically adjusts when browser window is resized
+- **Responsive breakpoints**:
+  - Desktop (> 1024px): Full layout with all features
+  - Tablet (768-1024px): Compact header and spacing
+  - Mobile (< 768px): Optimized for small screens
+- **Fullscreen mode**: Available via command palette
+
+### Layout Architecture
+- CSS Flexbox for main layout structure
+- Gantt container fills remaining viewport height
+- Minimal margins and padding for maximum content area
+- Status section can be collapsed to gain more vertical space
 
 ## Important Notes
 

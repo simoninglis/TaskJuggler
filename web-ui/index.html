@@ -11,6 +11,7 @@
     <!-- Custom styles -->
     <link rel="stylesheet" href="css/main.css" type="text/css">
     <link rel="stylesheet" href="css/dark-theme.css" type="text/css">
+    <link rel="stylesheet" href="css/responsive-layout.css" type="text/css">
 </head>
 <body>
     <div class="header">
@@ -22,20 +23,27 @@
         </div>
     </div>
     
-    <div class="gantt-container">
-        <div id="gantt_here" tabindex="0"></div>
-    </div>
-    
-    <div class="status">
-        <h3>Status</h3>
-        <div id="status">Ready. Loading sample TaskJuggler data...</div>
-        <div id="activeFilters" style="margin-top: 10px; padding: 8px; background: #e3f2fd; border-radius: 4px; display: none;">
-            <strong style="color: #1976d2;">Active Filter:</strong>
-            <span id="filterDescription"></span>
-            <button onclick="clearAllFilters()" style="margin-left: 10px; padding: 4px 8px; background: #fff; border: 1px solid #1976d2; border-radius: 4px; color: #1976d2; cursor: pointer;">Clear Filter</button>
+    <div class="main-content">
+        <div class="gantt-container">
+            <div id="gantt_here" tabindex="0"></div>
         </div>
-        <div style="margin-top: 10px; font-size: 12px; color: #666;">
-            Press <kbd style="padding: 2px 6px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 3px;">?</kbd> for keyboard shortcuts
+        
+        <div class="status" id="statusSection">
+            <div class="status-header" onclick="toggleStatus()">
+                <h3>Status</h3>
+                <button class="status-toggle" aria-label="Toggle status section">▼</button>
+            </div>
+            <div class="status-content">
+                <div id="status">Ready. Loading sample TaskJuggler data...</div>
+                <div id="activeFilters" style="margin-top: 10px; padding: 8px; background: var(--status-info-bg); border-radius: 4px; display: none;">
+                    <strong style="color: var(--status-info-text);">Active Filter:</strong>
+                    <span id="filterDescription"></span>
+                    <button onclick="clearAllFilters()" style="margin-left: 10px; padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--status-info-text); border-radius: 4px; color: var(--status-info-text); cursor: pointer;">Clear Filter</button>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: var(--text-tertiary);">
+                    Press <kbd style="padding: 2px 6px; background: var(--bg-tertiary); border: 1px solid var(--border-secondary); border-radius: 3px;">?</kbd> for keyboard shortcuts
+                </div>
+            </div>
         </div>
     </div>
 
@@ -46,6 +54,7 @@
     
     <!-- Modular JavaScript files -->
     <script src="js/theme-manager.js"></script>
+    <script src="js/layout-manager.js"></script>
     <script src="js/gantt-config.js"></script>
     <script src="js/gantt-data.js"></script>
     <script src="js/gantt-controls.js"></script>

@@ -218,6 +218,19 @@ class CustomCommandPalette {
                 }
             },
             {
+                id: 'toggle-fullscreen',
+                title: 'Toggle fullscreen',
+                description: 'Enter or exit fullscreen mode',
+                section: 'View',
+                keywords: 'fullscreen full screen maximize expand',
+                icon: '🖥️',
+                handler: () => {
+                    if (window.layoutManager) {
+                        window.layoutManager.toggleFullscreen();
+                    }
+                }
+            },
+            {
                 id: 'zoom-hour',
                 title: 'Zoom to hour view',
                 description: 'Switch timeline to hourly scale',

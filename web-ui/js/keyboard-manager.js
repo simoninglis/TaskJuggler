@@ -397,13 +397,18 @@ class KeyboardManager {
             return 'handled';
         });
         
-        // 'F' key - Open focus search
+        // 'f' key - Open focus search (lowercase)
         this.registerGlobalHotkey('f', (e, currentState) => {
             if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
                 return 'continue'; // Let palette handle it
             }
             
-            this.debug('Global F pressed - opening focus search');
+            // Check if shift is pressed for fullscreen
+            if (e.shiftKey) {
+                return 'continue'; // Let shift+f be handled separately
+            }
+            
+            this.debug('Global f pressed - opening focus search');
             if (window.customCommandPalette) {
                 window.customCommandPalette.openFocusSearch();
                 this.debug('Opened custom command palette in focus search mode');

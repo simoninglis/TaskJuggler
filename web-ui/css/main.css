@@ -2,26 +2,23 @@
 
 body {
     margin: 0;
-    padding: 20px;
+    padding: 20px; /* Will be overridden by responsive-layout.css */
     font-family: Arial, sans-serif;
     background-color: #f5f5f5;
 }
 
 .header {
     background: white;
-    padding: 20px;
+    padding: 15px 20px;
     margin-bottom: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 h1 {
-    margin: 0 0 10px 0;
+    margin: 0;
     color: #333;
-}
-
-.controls {
-    margin: 10px 0;
+    font-size: 24px;
 }
 
 .highlight {
@@ -38,7 +35,7 @@ h1 {
 
 #gantt_here {
     width: 100%;
-    height: 600px;
+    height: 600px; /* Will be overridden by responsive-layout.css */
 }
 
 .status {
@@ -47,75 +44,6 @@ h1 {
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Mode toggle switch styles */
-.mode-indicator {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 15px;
-    vertical-align: middle;
-}
-
-.mode-label {
-    margin-right: 8px;
-    font-weight: 500;
-}
-
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-    margin: 0 10px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #28a745;
-    transition: .4s;
-    border-radius: 24px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: #dc3545;
-}
-
-input:checked + .slider:before {
-    transform: translateX(26px);
-}
-
-.mode-text {
-    font-weight: 500;
-    min-width: 80px;
-    color: #28a745;
-}
-
-.mode-text.edit-mode {
-    color: #dc3545;
 }
 
 /* Selected task styling - ensure both indicators are in sync */

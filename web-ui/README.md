@@ -45,9 +45,14 @@ Key bindings follow VIM conventions where applicable:
 
 - **Interactive Gantt Chart**: Built with DHTMLX Gantt (open source)
 - **TaskJuggler Integration**: Reads JSON data exported from TaskJuggler
+- **Responsive Layout**: 
+  - Uses full browser viewport
+  - Adapts to different screen sizes
+  - Collapsible status section
+  - Fullscreen mode support
 - **Modern Controls**: 
-  - Toggle edit/read-only mode
-  - Zoom in/out (hour/day/week/month)
+  - Dark/light theme toggle
+  - Zoom in/out (hour/day/week/month/quarter/year)
   - Grid visibility toggle
   - JSON export
 - **Real-time Status**: Shows current operations and data loading
