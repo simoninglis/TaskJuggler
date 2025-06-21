@@ -4,7 +4,15 @@ Test command palette functionality in the Gantt chart
 """
 
 import asyncio
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from playwright.async_api import async_playwright
+from helpers.command_palette_helpers import (
+    is_palette_open, wait_for_palette, get_visible_commands,
+    select_command_by_text, get_palette_mode, type_in_palette
+)
 
 async def test_command_palette():
     """Test the command palette features"""
@@ -24,32 +32,28 @@ async def test_command_palette():
         
         # Press Ctrl+K to open command palette
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(500)
+        await wait_for_palette(page, visible=True)
         
         # Check if command palette is visible
-        ninja_visible = await page.evaluate('''() => {
-            const ninja = document.querySelector('ninja-keys');
-            return ninja && ninja.shadowRoot && 
-                   ninja.shadowRoot.querySelector('.modal') !== null;
-        }''')
+        palette_open = await is_palette_open(page)
         
-        if ninja_visible:
+        if palette_open:
             print("✓ SUCCESS: Command palette opened with Ctrl+K")
         else:
             print("✗ FAIL: Command palette did not open")
         
         # Close it with Escape
         await page.keyboard.press('Escape')
-        await page.wait_for_timeout(300)
+        await wait_for_palette(page, visible=False)
         
         print("\n=== Test 2: Filter overdue tasks ===")
         
         # Open command palette
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(300)
+        await wait_for_palette(page, visible=True)
         
         # Type "overdue" to search for the command
-        await page.keyboard.type('overdue')
+        await type_in_palette(page, 'overdue')
         await page.wait_for_timeout(300)
         
         # Press Enter to execute the first matching command
@@ -69,10 +73,10 @@ async def test_command_palette():
         
         # Open command palette
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(300)
+        await wait_for_palette(page, visible=True)
         
         # Type "clear" to find clear filters command
-        await page.keyboard.type('clear')
+        await type_in_palette(page, 'clear')
         await page.wait_for_timeout(300)
         
         # Execute clear filters
@@ -92,8 +96,8 @@ async def test_command_palette():
         
         # Test zoom to month
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(300)
-        await page.keyboard.type('zoom month')
+        await wait_for_palette(page, visible=True)
+        await type_in_palette(page, 'zoom month')
         await page.wait_for_timeout(300)
         await page.keyboard.press('Enter')
         await page.wait_for_timeout(500)
@@ -111,8 +115,8 @@ async def test_command_palette():
         
         # Filter today's tasks
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(300)
-        await page.keyboard.type('today')
+        await wait_for_palette(page, visible=True)
+        await type_in_palette(page, 'today')
         await page.wait_for_timeout(300)
         await page.keyboard.press('Enter')
         await page.wait_for_timeout(500)
@@ -129,8 +133,8 @@ async def test_command_palette():
         
         # Collapse all
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(300)
-        await page.keyboard.type('collapse all')
+        await wait_for_palette(page, visible=True)
+        await type_in_palette(page, 'collapse all')
         await page.wait_for_timeout(300)
         await page.keyboard.press('Enter')
         await page.wait_for_timeout(500)
@@ -146,8 +150,8 @@ async def test_command_palette():
         
         # Expand all
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(300)
-        await page.keyboard.type('expand all')
+        await wait_for_palette(page, visible=True)
+        await type_in_palette(page, 'expand all')
         await page.wait_for_timeout(300)
         await page.keyboard.press('Enter')
         await page.wait_for_timeout(500)

@@ -4,7 +4,14 @@ Test to reproduce the command palette bug where it gets stuck after collapse all
 """
 
 import asyncio
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from playwright.async_api import async_playwright
+from helpers.command_palette_helpers import (
+    is_palette_open, wait_for_palette, type_in_palette
+)
 
 async def test_command_palette_bug():
     """Reproduce the specific bug: command palette stays stuck after collapse all"""
@@ -28,30 +35,14 @@ async def test_command_palette_bug():
         
         # Check initial state
         initial_state = await page.evaluate('''() => {
-            const ninja = document.getElementById('commandPalette');
-            const result = {
-                exists: !!ninja,
-                hasVisibleAttr: ninja ? ninja.hasAttribute('visible') : false,
-                shadowRoot: ninja ? !!ninja.shadowRoot : false
+            const palette = document.getElementById('customCommandPalette');
+            const paletteObj = window.customCommandPalette;
+            return {
+                domExists: !!palette,
+                objExists: !!paletteObj,
+                isOpen: paletteObj ? paletteObj.getState().isOpen : false,
+                display: palette ? palette.style.display : 'not found'
             };
-            
-            if (ninja && ninja.shadowRoot) {
-                const modal = ninja.shadowRoot.querySelector('.modal');
-                const backdrop = ninja.shadowRoot.querySelector('.backdrop');
-                result.shadowModal = !!modal;
-                result.shadowBackdrop = !!backdrop;
-                if (modal) {
-                    result.modalClasses = Array.from(modal.classList);
-                    result.modalOpacity = window.getComputedStyle(modal).opacity;
-                    result.modalDisplay = window.getComputedStyle(modal).display;
-                }
-                if (backdrop) {
-                    result.backdropOpacity = window.getComputedStyle(backdrop).opacity;
-                    result.backdropDisplay = window.getComputedStyle(backdrop).display;
-                }
-            }
-            
-            return result;
         }''')
         
         print(f"Initial state: {initial_state}")
@@ -60,50 +51,24 @@ async def test_command_palette_bug():
         
         # Open command palette
         await page.keyboard.press('Control+k')
-        await page.wait_for_timeout(1000)  # Give time for palette to fully open
+        await wait_for_palette(page, visible=True)
         
         # Check state after opening
         opened_state = await page.evaluate('''() => {
-            const ninja = document.getElementById('commandPalette');
-            const result = {
-                exists: !!ninja,
-                hasVisibleAttr: ninja ? ninja.hasAttribute('visible') : false,
-                shadowRoot: ninja ? !!ninja.shadowRoot : false,
-                activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : '')
+            const palette = document.getElementById('customCommandPalette');
+            const paletteObj = window.customCommandPalette;
+            const state = paletteObj ? paletteObj.getState() : null;
+            return {
+                isOpen: state ? state.isOpen : false,
+                display: palette ? palette.style.display : 'not found',
+                activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
+                inputFocused: document.activeElement === document.getElementById('paletteSearch')
             };
-            
-            if (ninja && ninja.shadowRoot) {
-                const modal = ninja.shadowRoot.querySelector('.modal');
-                const backdrop = ninja.shadowRoot.querySelector('.backdrop');
-                const input = ninja.shadowRoot.querySelector('input');
-                
-                result.shadowModal = !!modal;
-                result.shadowBackdrop = !!backdrop;
-                result.shadowInput = !!input;
-                
-                if (modal) {
-                    result.modalClasses = Array.from(modal.classList);
-                    result.modalOpacity = window.getComputedStyle(modal).opacity;
-                    result.modalDisplay = window.getComputedStyle(modal).display;
-                    result.modalVisibility = window.getComputedStyle(modal).visibility;
-                }
-                if (backdrop) {
-                    result.backdropOpacity = window.getComputedStyle(backdrop).opacity;
-                    result.backdropDisplay = window.getComputedStyle(backdrop).display;
-                    result.backdropVisibility = window.getComputedStyle(backdrop).visibility;
-                }
-                if (input) {
-                    result.inputFocused = input === ninja.shadowRoot.activeElement;
-                    result.inputValue = input.value;
-                }
-            }
-            
-            return result;
         }''')
         
         print(f"After opening: {opened_state}")
         
-        if not opened_state['shadowBackdrop']:
+        if not opened_state['isOpen']:
             print("❌ FAIL: Command palette did not open properly")
             await browser.close()
             return
@@ -113,20 +78,16 @@ async def test_command_palette_bug():
         print("\n=== STEP 3: Type 'collapse all' command ===")
         
         # Type the command
-        await page.keyboard.type('collapse all')
+        await type_in_palette(page, 'collapse all')
         await page.wait_for_timeout(500)
         
         # Check if command is found
         command_visible = await page.evaluate('''() => {
-            const ninja = document.getElementById('commandPalette');
-            if (ninja && ninja.shadowRoot) {
-                const items = ninja.shadowRoot.querySelectorAll('.ninja-action');
-                const collapseCommand = Array.from(items).find(item => 
-                    item.textContent.toLowerCase().includes('collapse all')
-                );
-                return !!collapseCommand;
-            }
-            return false;
+            const items = document.querySelectorAll('.command-item');
+            const collapseCommand = Array.from(items).find(item => 
+                item.textContent.toLowerCase().includes('collapse all')
+            );
+            return !!collapseCommand;
         }''')
         
         print(f"Collapse all command visible: {command_visible}")
@@ -141,44 +102,15 @@ async def test_command_palette_bug():
         
         # Check state after command execution
         after_command_state = await page.evaluate('''() => {
-            const ninja = document.getElementById('commandPalette');
-            const result = {
-                exists: !!ninja,
-                hasVisibleAttr: ninja ? ninja.hasAttribute('visible') : false,
-                shadowRoot: ninja ? !!ninja.shadowRoot : false,
+            const palette = document.getElementById('customCommandPalette');
+            const paletteObj = window.customCommandPalette;
+            const state = paletteObj ? paletteObj.getState() : null;
+            return {
+                isOpen: state ? state.isOpen : false,
+                display: palette ? palette.style.display : 'not found',
                 activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
-                isCommandPaletteOpen: window.isCommandPaletteOpen || false
+                overlayClass: palette ? palette.className : 'not found'
             };
-            
-            if (ninja && ninja.shadowRoot) {
-                const modal = ninja.shadowRoot.querySelector('.modal');
-                const backdrop = ninja.shadowRoot.querySelector('.backdrop');
-                const input = ninja.shadowRoot.querySelector('input');
-                
-                result.shadowModal = !!modal;
-                result.shadowBackdrop = !!backdrop;
-                result.shadowInput = !!input;
-                
-                if (modal) {
-                    result.modalClasses = Array.from(modal.classList);
-                    result.modalOpacity = window.getComputedStyle(modal).opacity;
-                    result.modalDisplay = window.getComputedStyle(modal).display;
-                    result.modalVisibility = window.getComputedStyle(modal).visibility;
-                    result.modalPointerEvents = window.getComputedStyle(modal).pointerEvents;
-                }
-                if (backdrop) {
-                    result.backdropOpacity = window.getComputedStyle(backdrop).opacity;
-                    result.backdropDisplay = window.getComputedStyle(backdrop).display;
-                    result.backdropVisibility = window.getComputedStyle(backdrop).visibility;
-                    result.backdropPointerEvents = window.getComputedStyle(backdrop).pointerEvents;
-                }
-                if (input) {
-                    result.inputValue = input.value;
-                    result.inputFocused = input === ninja.shadowRoot.activeElement;
-                }
-            }
-            
-            return result;
         }''')
         
         print(f"After command execution: {after_command_state}")
@@ -187,88 +119,70 @@ async def test_command_palette_bug():
         palette_stuck = False
         
         # Check multiple indicators to see if palette is stuck
-        if after_command_state['shadowBackdrop']:
-            print("🔍 ANALYSIS: Backdrop element still exists")
+        if after_command_state['isOpen']:
+            print("🔍 ANALYSIS: Palette still reports as open")
             palette_stuck = True
         
-        if after_command_state['shadowModal'] and after_command_state['modalOpacity'] != '0':
-            print("🔍 ANALYSIS: Modal still visible (opacity > 0)")
+        if after_command_state['display'] !== 'none' and after_command_state['display'] !== 'not found':
+            print(f"🔍 ANALYSIS: Palette display is '{after_command_state['display']}' instead of 'none'")
             palette_stuck = True
         
-        if after_command_state['hasVisibleAttr']:
-            print("🔍 ANALYSIS: Visible attribute still present")
-            palette_stuck = True
-        
-        if palette_stuck:
-            print("\n🐛 BUG REPRODUCED: Command palette is stuck on screen!")
-        else:
-            print("\n✅ NO BUG: Command palette closed properly")
-        
-        print("\n=== STEP 6: Test keyboard navigation after command ===")
-        
-        # Click on gantt to ensure focus
-        await page.click('#gantt_here')
-        await page.wait_for_timeout(300)
+        print("\n=== STEP 6: Test navigation after command ===")
         
         # Try to navigate with arrow keys
+        print("Attempting to navigate with arrow keys...")
         await page.keyboard.press('ArrowDown')
-        await page.wait_for_timeout(200)
+        await page.wait_for_timeout(300)
         
-        # Check if navigation worked
-        navigation_state = await page.evaluate('''() => {
+        # Check if gantt navigation works
+        nav_works = await page.evaluate('''() => {
+            // Check if we can get selected task
+            const selectedId = window.gantt ? window.gantt.getSelectedId() : null;
             return {
-                selectedTask: gantt.getSelectedId(),
-                activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
-                paletteStillBlocking: window.isCommandPaletteOpen || false
+                hasSelection: !!selectedId,
+                selectedTask: selectedId
             };
         }''')
         
-        print(f"Navigation test: {navigation_state}")
+        print(f"Navigation after command: {nav_works}")
         
-        if navigation_state['selectedTask']:
-            print("✅ Keyboard navigation works")
+        if palette_stuck and not nav_works['hasSelection']:
+            print("\n❌ BUG CONFIRMED: Command palette is stuck and blocking navigation!")
+        elif palette_stuck:
+            print("\n⚠️  PARTIAL BUG: Palette stuck visually but navigation still works")
         else:
-            print("❌ Keyboard navigation blocked")
+            print("\n✅ NO BUG: Command palette closed properly and navigation works")
         
-        print("\n=== STEP 7: Test Escape key to close stuck palette ===")
+        print("\n=== STEP 7: Try to open palette again ===")
+        
+        # Try to open palette again
+        await page.keyboard.press('Control+k')
+        await page.wait_for_timeout(500)
+        
+        reopen_state = await is_palette_open(page)
+        
+        if reopen_state:
+            print("✅ Can reopen palette - recovery possible")
+        else:
+            print("❌ Cannot reopen palette - system stuck")
+        
+        print("\n=== STEP 8: Manual recovery attempt ===")
         
         if palette_stuck:
-            print("Attempting to close stuck palette with Escape...")
-            await page.keyboard.press('Escape')
-            await page.wait_for_timeout(500)
+            # Try escape key multiple times
+            print("Attempting recovery with multiple Escape presses...")
+            for i in range(3):
+                await page.keyboard.press('Escape')
+                await page.wait_for_timeout(200)
             
-            # Check if Escape fixed it
-            escape_state = await page.evaluate('''() => {
-                const ninja = document.getElementById('commandPalette');
-                if (ninja && ninja.shadowRoot) {
-                    const backdrop = ninja.shadowRoot.querySelector('.backdrop');
-                    const modal = ninja.shadowRoot.querySelector('.modal');
-                    return {
-                        hasBackdrop: !!backdrop,
-                        modalOpacity: modal ? window.getComputedStyle(modal).opacity : null,
-                        hasVisibleAttr: ninja.hasAttribute('visible')
-                    };
-                }
-                return { hasBackdrop: false, modalOpacity: null, hasVisibleAttr: false };
-            }''')
+            final_state = await is_palette_open(page)
             
-            print(f"After Escape: {escape_state}")
-            
-            if not escape_state['hasBackdrop'] and escape_state['modalOpacity'] == '0':
-                print("✅ Escape key fixed the stuck palette")
+            if not final_state:
+                print("✅ Recovery successful with Escape key")
             else:
-                print("❌ Escape key did not fix the stuck palette")
+                print("❌ Recovery failed - palette still stuck")
         
-        print("\n=== SUMMARY ===")
-        if palette_stuck:
-            print("🐛 BUG CONFIRMED: Command palette gets stuck after 'collapse all'")
-            print("   - Backdrop element remains in DOM")
-            print("   - Modal may still be visible")
-            print("   - May interfere with keyboard navigation")
-        else:
-            print("✅ NO BUG DETECTED: Command palette behaves correctly")
-        
-        print("\nTest completed. Browser will stay open for 10 seconds for manual verification...")
+        print("\nTest completed. Browser will stay open for 10 seconds...")
         await page.wait_for_timeout(10000)
         
         await browser.close()
