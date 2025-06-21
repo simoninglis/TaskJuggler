@@ -2,15 +2,15 @@
 
 # Start debug server with WebSocket logging and file output
 debug:
-    poetry run python dev/serve-with-debug.py 2>&1 | tee /tmp/webui-server.log
+    poetry run python server/serve-with-debug.py 2>&1 | tee /tmp/webui-server.log
 
 # Start auto-reload server with file output
 dev:
-    python3 dev/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
+    python3 server/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
 
 # Start standard server with file output
 serve:
-    python3 dev/serve.py 2>&1 | tee /tmp/webui-server.log
+    python3 server/serve.py 2>&1 | tee /tmp/webui-server.log
 
 # View HTTP server logs
 logs:
@@ -49,4 +49,4 @@ install:
 
 # Run tests
 test:
-    poetry run python run_tests.py
+    poetry run python scripts/run_tests.py

@@ -38,17 +38,17 @@ The user will start the web UI server in a separate tmux session using one of th
 
 **Debug server with WebSocket logging (recommended for debugging):**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && poetry run python dev/serve-with-debug.py
+cd /home/singlis/work/TaskJuggler/web-ui && poetry run python server/serve-with-debug.py
 ```
 
 **Auto-reload server (recommended for development):**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && python3 dev/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
+cd /home/singlis/work/TaskJuggler/web-ui && python3 server/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
 ```
 
 **Standard server:**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && python3 dev/serve.py 2>&1 | tee /tmp/webui-server.log
+cd /home/singlis/work/TaskJuggler/web-ui && python3 server/serve.py 2>&1 | tee /tmp/webui-server.log
 ```
 
 ## Server Information
@@ -242,6 +242,10 @@ tests/
 ├── command_palette/    # Command palette tests
 ├── keyboard/          # Keyboard navigation tests
 ├── integration/       # Integration and feature tests
+├── misc/              # Miscellaneous tests (moved from root)
+└── fixtures/          # Test data files
+
+scripts/
 └── run_tests.py      # Test runner script
 ```
 
@@ -251,18 +255,19 @@ tests/
 1. Start the debug server in a separate terminal:
    ```bash
    cd /home/singlis/work/TaskJuggler/web-ui
-   poetry run python dev/serve-with-debug.py
+   poetry run python server/serve-with-debug.py
    ```
 
 2. Run tests:
    ```bash
    # Run all tests
-   python run_tests.py all
+   python scripts/run_tests.py all
    
    # Run specific category
-   python run_tests.py command_palette
-   python run_tests.py keyboard
-   python run_tests.py integration
+   python scripts/run_tests.py command_palette
+   python scripts/run_tests.py keyboard
+   python scripts/run_tests.py integration
+   python scripts/run_tests.py misc
    
    # Run individual test file
    poetry run pytest tests/integration/test_milestones.py -v -s

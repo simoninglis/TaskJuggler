@@ -789,3 +789,27 @@ function navigateToPreviousMilestone() {
         updateStatus(`Jumped to milestone: ${prevMilestone.text}`);
     }
 }
+
+// Mouse Wheel Zoom
+function initializeMouseWheelZoom() {
+    const ganttElement = document.getElementById('gantt_here');
+    if (!ganttElement) return;
+    
+    ganttElement.addEventListener('wheel', function(event) {
+        // Only handle vertical scrolling for zoom
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+            // Prevent default scrolling behavior for zoom
+            event.preventDefault();
+            
+            // Determine zoom direction
+            if (event.deltaY < 0) {
+                // Scroll up = zoom in
+                zoomIn();
+            } else {
+                // Scroll down = zoom out
+                zoomOut();
+            }
+        }
+        // For horizontal scrolling, let the browser handle it naturally
+    }, { passive: false });
+}

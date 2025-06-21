@@ -48,6 +48,7 @@ class KeyboardHelp {
                 icon: '🔍',
                 shortcuts: [
                     { keys: '+ / -', description: 'Zoom in/out on timeline' },
+                    { keys: 'Mouse Scroll', description: 'Zoom in/out with mouse wheel' },
                     { keys: 'Shift + ← / →', description: 'Scroll timeline horizontally' },
                     { keys: 'F', description: 'Focus search - zoom to specific area' },
                     { keys: 'Shift + F', description: 'Focus on current selection' }

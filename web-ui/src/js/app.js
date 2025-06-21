@@ -12,6 +12,9 @@ function initializeApp() {
     // 3. Keyboard navigation is now handled automatically by KeyboardManager
     
     // 4. Command palette is initialized automatically by custom-command-palette.js
+    
+    // 5. Initialize mouse wheel zoom
+    initializeMouseWheelZoom();
 }
 
 // Start the application when DOM is ready

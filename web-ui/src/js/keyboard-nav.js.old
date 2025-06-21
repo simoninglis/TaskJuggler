@@ -1,0 +1,416 @@
+// Keyboard Navigation
+// This file handles all custom keyboard navigation logic
+
+// Global state for command palette
+let isCommandPaletteOpen = false;  // Track command palette state
+
+// Add keyboard handler immediately at document level
+function initializeKeyboardNavigation() {
+    setTimeout(() => {
+        if (window.debugLog) window.debugLog('info', 'Setting up keyboard handlers at document level');
+    }, 500);
+    
+    document.addEventListener('keydown', function(e) {
+        // Handle Ctrl+K FIRST - always allow this through, even if flag is stuck
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            const ninja = document.getElementById('commandPalette');
+            if (ninja && isCommandPaletteOpen) {
+                const hasVisibleAttr = ninja.hasAttribute('visible');
+                const shadowBackdrop = ninja.shadowRoot ? !!ninja.shadowRoot.querySelector('.backdrop') : false;
+                const modal = ninja.shadowRoot ? ninja.shadowRoot.querySelector('.modal') : null;
+                const modalOpacity = modal ? window.getComputedStyle(modal).opacity : '0';
+                
+                // If flag says open but palette appears closed, force reset
+                if (!hasVisibleAttr && !shadowBackdrop && modalOpacity === '0') {
+                    if (window.debugLog) {
+                        window.debugLog('debug', 'Ctrl+K: Forcing reset of stuck open flag before processing');
+                    }
+                    isCommandPaletteOpen = false;
+                }
+            }
+            
+            // Don't prevent default - let Ninja Keys handle this
+            // Set flag that palette is likely opening
+            setTimeout(() => {
+                // Check if palette actually opened
+                if (ninja) {
+                    const hasVisibleAttr = ninja.hasAttribute('visible');
+                    const hasShadowModal = ninja.shadowRoot && ninja.shadowRoot.querySelector('.modal');
+                    const modalOpacity = ninja.shadowRoot && ninja.shadowRoot.querySelector('.modal') ? 
+                                        window.getComputedStyle(ninja.shadowRoot.querySelector('.modal')).opacity : '0';
+                    
+                    if (hasVisibleAttr || (hasShadowModal && modalOpacity !== '0')) {
+                        isCommandPaletteOpen = true;
+                        if (window.debugLog) window.debugLog('debug', 'Command palette confirmed open after Ctrl+K');
+                    }
+                }
+            }, 100);
+            return;
+        }
+        
+        // Check if command palette is open FIRST, before logging
+        const ninja = document.getElementById('commandPalette');
+        if (ninja) {
+            // Check if ninja-keys is actively shown (has visible attribute or shadow root modal)
+            const hasVisibleAttr = ninja.hasAttribute('visible');
+            const hasOpenClass = ninja.classList.contains('open');
+            
+            // Check shadow DOM for visible modal element
+            let hasShadowModal = false;
+            if (ninja.shadowRoot) {
+                // Check for backdrop as more reliable indicator
+                const backdrop = ninja.shadowRoot.querySelector('.backdrop');
+                const modal = ninja.shadowRoot.querySelector('.modal');
+                const modalOpacity = modal ? window.getComputedStyle(modal).opacity : '0';
+                const modalDisplay = modal ? window.getComputedStyle(modal).display : 'none';
+                
+                hasShadowModal = !!backdrop || (modal && modalOpacity !== '0' && modalDisplay !== 'none');
+            }
+            
+            const isPaletteOpen = hasVisibleAttr || hasOpenClass || hasShadowModal || isCommandPaletteOpen;
+            
+            if (window.debugLog && (hasVisibleAttr || hasOpenClass || hasShadowModal || isCommandPaletteOpen)) {
+                const modal = ninja.shadowRoot ? ninja.shadowRoot.querySelector('.modal') : null;
+                const backdrop = ninja.shadowRoot ? ninja.shadowRoot.querySelector('.backdrop') : null;
+                window.debugLog('debug', 'Command palette state check', {
+                    hasVisibleAttr,
+                    hasOpenClass,
+                    hasShadowModal,
+                    isCommandPaletteOpen,
+                    isPaletteOpen,
+                    modalOpacity: modal ? window.getComputedStyle(modal).opacity : null,
+                    modalDisplay: modal ? window.getComputedStyle(modal).display : null,
+                    hasBackdrop: !!backdrop
+                });
+            }
+            
+            if (isPaletteOpen) {
+                if (window.debugLog) window.debugLog('debug', 'Command palette is open, ignoring key: ' + e.key);
+                // Don't handle ANY keys when command palette is open
+                // Let Ninja Keys handle all keyboard events
+                return;
+            }
+        }
+        
+        // Log all keydown events for debugging (only when palette is not open)
+        if (window.debugLog) {
+            window.debugLog('event', 'Keydown event', {
+                key: e.key,
+                keyCode: e.keyCode,
+                ctrlKey: e.ctrlKey,
+                shiftKey: e.shiftKey,
+                altKey: e.altKey,
+                metaKey: e.metaKey,
+                target: e.target.tagName + (e.target.id ? '#' + e.target.id : ''),
+                activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
+                selectedTask: gantt.getSelectedId()
+            });
+        }
+        
+        // Don't handle if search is focused
+        const searchInput = document.getElementById('searchInput');
+        if (document.activeElement === searchInput) {
+            if (window.debugLog) window.debugLog('debug', 'Ignoring key - search input is focused');
+            return;
+        }
+        
+        const selectedId = gantt.getSelectedId();
+        
+        if (window.debugLog) window.debugLog('debug', 'Passed all early return checks, processing key: ' + e.key);
+        
+        // Ctrl+F or Cmd+F to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'Ctrl+F pressed - focusing search');
+            searchInput.focus();
+            searchInput.select();
+            return;
+        }
+        
+        // Zoom shortcuts
+        if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'Zoom in key pressed');
+            zoomIn();
+            return;
+        } else if (e.key === '-' || e.key === '_') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'Zoom out key pressed');
+            zoomOut();
+            return;
+        }
+        
+        // Horizontal scrolling with Shift + Arrow keys
+        if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const scrollState = gantt.getScrollState();
+            const scrollAmount = calculateScrollAmount();
+            
+            if (e.key === 'ArrowLeft') {
+                if (window.debugLog) window.debugLog('debug', 'Shift+Left pressed - scrolling left', {
+                    currentX: scrollState.x,
+                    scrollAmount: scrollAmount
+                });
+                gantt.scrollTo(Math.max(0, scrollState.x - scrollAmount), null);
+                updateStatus('Scrolled left');
+            } else {
+                if (window.debugLog) window.debugLog('debug', 'Shift+Right pressed - scrolling right', {
+                    currentX: scrollState.x,
+                    scrollAmount: scrollAmount
+                });
+                gantt.scrollTo(scrollState.x + scrollAmount, null);
+                updateStatus('Scrolled right');
+            }
+            return;
+        }
+        
+        // Home/End keys for timeline navigation
+        if (e.key === 'Home') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'Home pressed - scrolling to start');
+            gantt.scrollTo(0, null);
+            updateStatus('Scrolled to timeline start');
+            return;
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'End pressed - scrolling to end');
+            // Scroll to the far right (large number, gantt will clamp it)
+            gantt.scrollTo(999999, null);
+            updateStatus('Scrolled to timeline end');
+            return;
+        }
+        
+        // Navigation shortcuts
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'Arrow up pressed');
+            selectPreviousTask();
+            return;
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.debugLog) window.debugLog('debug', 'Arrow down pressed');
+            selectNextTask();
+            return;
+        }
+        
+        // Expand/Collapse shortcuts
+        if (e.key === 'ArrowRight' && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (selectedId && gantt.hasChild(selectedId)) {
+                if (window.debugLog) window.debugLog('debug', 'Arrow right pressed - expanding task', {task: selectedId});
+                gantt.open(selectedId);
+            } else {
+                if (window.debugLog) window.debugLog('debug', 'Arrow right pressed - no children or no selection', {task: selectedId, hasChildren: selectedId ? gantt.hasChild(selectedId) : false});
+            }
+            return;
+        } else if (e.key === 'ArrowLeft' && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (selectedId && gantt.hasChild(selectedId)) {
+                if (window.debugLog) window.debugLog('debug', 'Arrow left pressed - collapsing task', {task: selectedId});
+                gantt.close(selectedId);
+            } else {
+                if (window.debugLog) window.debugLog('debug', 'Arrow left pressed - no children or no selection', {task: selectedId, hasChildren: selectedId ? gantt.hasChild(selectedId) : false});
+            }
+            return;
+        }
+        
+        // Space to toggle expand/collapse
+        if (e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (selectedId && gantt.hasChild(selectedId)) {
+                if (gantt.getState().opened[selectedId]) {
+                    if (window.debugLog) window.debugLog('debug', 'Space pressed - collapsing task', {task: selectedId});
+                    gantt.close(selectedId);
+                } else {
+                    if (window.debugLog) window.debugLog('debug', 'Space pressed - expanding task', {task: selectedId});
+                    gantt.open(selectedId);
+                }
+            }
+            return;
+        }
+        
+        // Enter to toggle expand/collapse for parent tasks, or edit in edit mode
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (selectedId) {
+                const childCount = gantt.hasChild(selectedId);
+                
+                if (window.debugLog) {
+                    window.debugLog('debug', 'Enter key handler triggered', {
+                        selectedId: selectedId, 
+                        isReadOnly: isReadOnly,
+                        hasChild: childCount
+                    });
+                }
+                
+                // If task has children, toggle expand/collapse
+                if (childCount > 0) {
+                    if (window.debugLog) window.debugLog('debug', 'Task has children, toggling expand/collapse');
+                    
+                    try {
+                        // Get the task to check its current open state
+                        const task = gantt.getTask(selectedId);
+                        const isCurrentlyOpen = task.$open;
+                        
+                        if (window.debugLog) {
+                            window.debugLog('debug', 'Got task state', {
+                                taskId: selectedId,
+                                isCurrentlyOpen: isCurrentlyOpen,
+                                task$open: task.$open
+                            });
+                        }
+                        
+                        // Toggle the state
+                        if (isCurrentlyOpen) {
+                            if (window.debugLog) window.debugLog('debug', 'Task is open, closing it', {task: selectedId});
+                            gantt.close(selectedId);
+                            if (window.debugLog) window.debugLog('debug', 'Close command completed');
+                        } else {
+                            if (window.debugLog) window.debugLog('debug', 'Task is closed, opening it', {task: selectedId});
+                            gantt.open(selectedId);
+                            if (window.debugLog) window.debugLog('debug', 'Open command completed');
+                        }
+                        
+                        // Verify the change
+                        const taskAfter = gantt.getTask(selectedId);
+                        if (window.debugLog) {
+                            window.debugLog('debug', 'Task state after toggle', {
+                                taskId: selectedId,
+                                wasClosed: !isCurrentlyOpen,
+                                nowOpen: taskAfter.$open,
+                                success: taskAfter.$open !== isCurrentlyOpen
+                            });
+                        }
+                    } catch (error) {
+                        if (window.debugLog) window.debugLog('error', 'Error in expand/collapse logic', {
+                            selectedId: selectedId,
+                            error: error.message,
+                            stack: error.stack
+                        });
+                    }
+                }
+                // Otherwise, if in edit mode, open lightbox
+                else if (!isReadOnly) {
+                    if (window.debugLog) window.debugLog('debug', 'Enter pressed - opening lightbox for leaf task', {task: selectedId});
+                    gantt.showLightbox(selectedId);
+                } else {
+                    if (window.debugLog) window.debugLog('debug', 'Enter pressed - no action (leaf task in read-only mode)', {task: selectedId});
+                }
+            }
+            return;
+        }
+    }); // Don't use capture phase - let Ninja Keys get events first
+    
+    // Handle search-specific keys at document level
+    document.addEventListener('keydown', function(e) {
+        // Don't handle if command palette is open
+        if (isCommandPaletteOpen) {
+            return;
+        }
+        
+        const searchInput = document.getElementById('searchInput');
+        const isSearchFocused = document.activeElement === searchInput;
+        
+        // Escape to clear search when search is focused
+        if (e.key === 'Escape' && isSearchFocused) {
+            clearSearch();
+            searchInput.blur();
+            document.getElementById('gantt_here').focus(); // Return focus to gantt
+            return;
+        }
+        
+        // Escape to force close stuck command palette (even when not focused)
+        if (e.key === 'Escape' && !isSearchFocused) {
+            const ninja = document.getElementById('commandPalette');
+            if (ninja && ninja.shadowRoot) {
+                const backdrop = ninja.shadowRoot.querySelector('.backdrop');
+                const modal = ninja.shadowRoot.querySelector('.modal');
+                const modalOpacity = modal ? window.getComputedStyle(modal).opacity : '0';
+                const modalDisplay = modal ? window.getComputedStyle(modal).display : 'none';
+                const isStuck = backdrop || (modal && modalOpacity !== '0' && modalDisplay !== 'none');
+                
+                if (isStuck) {
+                    if (window.debugLog) {
+                        window.debugLog('debug', 'Escape pressed - force closing stuck command palette', {
+                            hasBackdrop: !!backdrop,
+                            modalOpacity: modalOpacity,
+                            modalDisplay: modalDisplay,
+                            isStuck: isStuck
+                        });
+                    }
+                    forcePaletteClosure();
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+            }
+        }
+    });
+}
+
+// Navigation functions
+function selectNextTask() {
+    const allTasks = gantt.getTaskByTime();
+    const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
+    const currentId = gantt.getSelectedId();
+    
+    if (window.debugLog) {
+        window.debugLog('debug', 'Selecting next task', {
+            totalTasks: allTasks.length,
+            visibleTasks: visibleTasks.length,
+            currentSelection: currentId
+        });
+    }
+    
+    if (!currentId || visibleTasks.length === 0) {
+        if (visibleTasks.length > 0) {
+            gantt.selectTask(visibleTasks[0].id);
+        }
+        return;
+    }
+    
+    const currentIndex = visibleTasks.findIndex(task => task.id === currentId);
+    if (currentIndex !== -1 && currentIndex < visibleTasks.length - 1) {
+        gantt.selectTask(visibleTasks[currentIndex + 1].id);
+    }
+}
+
+function selectPreviousTask() {
+    const allTasks = gantt.getTaskByTime();
+    const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
+    const currentId = gantt.getSelectedId();
+    
+    if (window.debugLog) {
+        window.debugLog('debug', 'Selecting previous task', {
+            totalTasks: allTasks.length,
+            visibleTasks: visibleTasks.length,
+            currentSelection: currentId
+        });
+    }
+    
+    if (!currentId || visibleTasks.length === 0) {
+        if (visibleTasks.length > 0) {
+            gantt.selectTask(visibleTasks[visibleTasks.length - 1].id);
+        }
+        return;
+    }
+    
+    const currentIndex = visibleTasks.findIndex(task => task.id === currentId);
+    if (currentIndex > 0) {
+        gantt.selectTask(visibleTasks[currentIndex - 1].id);
+    }
+}
