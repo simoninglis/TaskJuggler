@@ -171,7 +171,7 @@
             color: #dc3545;
         }
         
-        /* Selected task styling */
+        /* Selected task styling - ensure both indicators are in sync */
         .gantt_task_row.gantt_selected,
         .gantt_row.gantt_selected {
             background-color: #e3f2fd !important;
@@ -179,6 +179,23 @@
         
         .gantt_task_line.gantt_selected {
             box-shadow: 0 0 0 2px #2196F3;
+        }
+        
+        /* Ensure keyboard focus shows selection */
+        .gantt_row.gantt_selected:focus-within,
+        .gantt_task_row.gantt_selected:focus-within {
+            background-color: #e3f2fd !important;
+            outline: none;
+        }
+        
+        /* Make gantt container focusable and remove outline */
+        #gantt_here:focus {
+            outline: none;
+        }
+        
+        /* Ensure cell focus follows row selection */
+        .gantt_cell.gantt_selected {
+            background-color: rgba(33, 150, 243, 0.1);
         }
     </style>
 </head>
@@ -317,8 +334,12 @@
                             gantt.selectTask(tasks[0].id);
                             gantt.showTask(tasks[0].id);
                         }
-                        // Focus the gantt container
-                        document.getElementById('gantt_here').focus();
+                        // Focus the gantt container and ensure it's ready for keyboard nav
+                        const ganttContainer = document.getElementById('gantt_here');
+                        ganttContainer.focus();
+                        
+                        // Force DHTMLX to recognize focus
+                        gantt.focus();
                     }, 100);
                 })
                 .catch(error => {
@@ -636,82 +657,211 @@
             // TODO: Send to Claude Code for TJP file update
         });
         
-        // Add keyboard shortcuts
+        // Configure DHTMLX keyboard navigation - disable it to use our own
+        gantt.config.keyboard_navigation = false;
+        
+        // Ensure gantt container is focusable
+        const ganttContainer = document.getElementById('gantt_here');
+        ganttContainer.setAttribute('tabindex', '0');
+        
+        // Keep focus on gantt when clicking on it
+        ganttContainer.addEventListener('click', function() {
+            if (window.debugLog) window.debugLog('debug', 'Gantt container clicked - focusing');
+            this.focus();
+        });
+        
+        // Monitor focus changes
+        document.addEventListener('focusin', function(e) {
+            if (window.debugLog) {
+                window.debugLog('event', 'Focus changed', {
+                    newFocus: e.target.tagName + (e.target.id ? '#' + e.target.id : ''),
+                    className: e.target.className
+                });
+            }
+        });
+        
+        // Add keyboard handler immediately at document level
+        setTimeout(() => {
+            if (window.debugLog) window.debugLog('info', 'Setting up keyboard handlers at document level');
+        }, 500);
+        
         document.addEventListener('keydown', function(e) {
-            // Don't handle shortcuts when typing in search
+                // Log all keydown events for debugging
+                if (window.debugLog) {
+                    window.debugLog('event', 'Keydown event', {
+                        key: e.key,
+                        keyCode: e.keyCode,
+                        ctrlKey: e.ctrlKey,
+                        shiftKey: e.shiftKey,
+                        altKey: e.altKey,
+                        metaKey: e.metaKey,
+                        target: e.target.tagName + (e.target.id ? '#' + e.target.id : ''),
+                        activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
+                        selectedTask: gantt.getSelectedId()
+                    });
+                }
+                
+                // Don't handle if search is focused
+                const searchInput = document.getElementById('searchInput');
+                if (document.activeElement === searchInput) {
+                    if (window.debugLog) window.debugLog('debug', 'Ignoring key - search input is focused');
+                    return;
+                }
+                
+                const selectedId = gantt.getSelectedId();
+                
+                // Ctrl+F or Cmd+F to focus search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'Ctrl+F pressed - focusing search');
+                    searchInput.focus();
+                    searchInput.select();
+                    return;
+                }
+                
+                // Zoom shortcuts
+                if (e.key === '+' || e.key === '=') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'Zoom in key pressed');
+                    zoomIn();
+                    return;
+                } else if (e.key === '-' || e.key === '_') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'Zoom out key pressed');
+                    zoomOut();
+                    return;
+                }
+                
+                // Navigation shortcuts
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'Arrow up pressed');
+                    selectPreviousTask();
+                    return;
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'Arrow down pressed');
+                    selectNextTask();
+                    return;
+                }
+                
+                // Expand/Collapse shortcuts
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedId && gantt.hasChild(selectedId)) {
+                        if (window.debugLog) window.debugLog('debug', 'Arrow right pressed - expanding task', {task: selectedId});
+                        gantt.open(selectedId);
+                    } else {
+                        if (window.debugLog) window.debugLog('debug', 'Arrow right pressed - no children or no selection', {task: selectedId, hasChildren: selectedId ? gantt.hasChild(selectedId) : false});
+                    }
+                    return;
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedId && gantt.hasChild(selectedId)) {
+                        if (window.debugLog) window.debugLog('debug', 'Arrow left pressed - collapsing task', {task: selectedId});
+                        gantt.close(selectedId);
+                    } else {
+                        if (window.debugLog) window.debugLog('debug', 'Arrow left pressed - no children or no selection', {task: selectedId, hasChildren: selectedId ? gantt.hasChild(selectedId) : false});
+                    }
+                    return;
+                }
+                
+                // Space to toggle expand/collapse
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedId && gantt.hasChild(selectedId)) {
+                        if (gantt.getState().opened[selectedId]) {
+                            if (window.debugLog) window.debugLog('debug', 'Space pressed - collapsing task', {task: selectedId});
+                            gantt.close(selectedId);
+                        } else {
+                            if (window.debugLog) window.debugLog('debug', 'Space pressed - expanding task', {task: selectedId});
+                            gantt.open(selectedId);
+                        }
+                    }
+                    return;
+                }
+                
+                // Enter to toggle expand/collapse for parent tasks, or edit in edit mode
+                if (e.key === 'Enter') {
+                    if (window.debugLog) {
+                        const hasChildValue = selectedId ? gantt.hasChild(selectedId) : null;
+                        window.debugLog('debug', 'Enter key handler triggered', {
+                            selectedId: selectedId, 
+                            isReadOnly: isReadOnly,
+                            hasChild: hasChildValue,
+                            hasChildType: typeof hasChildValue,
+                            hasChildTruthy: !!hasChildValue,
+                            task: selectedId ? gantt.getTask(selectedId) : null
+                        });
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedId) {
+                        const childCount = gantt.hasChild(selectedId);
+                        if (window.debugLog) window.debugLog('debug', 'Checking hasChild', {
+                            selectedId: selectedId,
+                            childCount: childCount,
+                            childCountType: typeof childCount,
+                            childCountTruthy: !!childCount,
+                            greaterThanZero: childCount > 0,
+                            comparisonResult: (childCount > 0) ? 'true' : 'false'
+                        });
+                        
+                        // If task has children, toggle expand/collapse
+                        if (window.debugLog) window.debugLog('debug', 'About to check if childCount > 0', {
+                            childCount: childCount,
+                            condition: childCount > 0
+                        });
+                        
+                        if (childCount > 0) {
+                            const task = gantt.getTask(selectedId);
+                            if (window.debugLog) window.debugLog('debug', 'Task has children, checking open state', {
+                                task: selectedId,
+                                childCount: childCount,
+                                isOpen: task.$open,
+                                ganttState: gantt.getState().opened[selectedId]
+                            });
+                            
+                            if (task.$open) {
+                                if (window.debugLog) window.debugLog('debug', 'Enter pressed - collapsing parent task', {task: selectedId});
+                                gantt.close(selectedId);
+                            } else {
+                                if (window.debugLog) window.debugLog('debug', 'Enter pressed - expanding parent task', {task: selectedId});
+                                gantt.open(selectedId);
+                            }
+                        }
+                        // Otherwise, if in edit mode, open lightbox
+                        else if (!isReadOnly) {
+                            if (window.debugLog) window.debugLog('debug', 'Enter pressed - opening lightbox for leaf task', {task: selectedId, childCount: childCount});
+                            gantt.showLightbox(selectedId);
+                        } else {
+                            if (window.debugLog) window.debugLog('debug', 'Enter pressed - no action (leaf task in read-only mode)', {task: selectedId, childCount: childCount});
+                        }
+                    }
+                    return;
+                }
+            }, true); // Use capture phase to get events before DHTMLX
+        
+        
+        // Handle search-specific keys at document level
+        document.addEventListener('keydown', function(e) {
             const searchInput = document.getElementById('searchInput');
             const isSearchFocused = document.activeElement === searchInput;
-            
-            // Ctrl+F or Cmd+F to focus search
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                searchInput.focus();
-                searchInput.select();
-                return;
-            }
             
             // Escape to clear search when search is focused
             if (e.key === 'Escape' && isSearchFocused) {
                 clearSearch();
                 searchInput.blur();
+                document.getElementById('gantt_here').focus(); // Return focus to gantt
                 return;
-            }
-            
-            // Don't process other shortcuts if search is focused
-            if (isSearchFocused) return;
-            
-            // Get currently selected task
-            const selectedId = gantt.getSelectedId();
-            
-            // Zoom shortcuts
-            if (e.key === '+' || e.key === '=') {
-                e.preventDefault();
-                zoomIn();
-            } else if (e.key === '-' || e.key === '_') {
-                e.preventDefault();
-                zoomOut();
-            }
-            
-            // Navigation shortcuts
-            else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectPreviousTask();
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectNextTask();
-            }
-            
-            // Expand/Collapse shortcuts
-            else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                if (selectedId && gantt.hasChild(selectedId)) {
-                    gantt.open(selectedId);
-                }
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                if (selectedId && gantt.hasChild(selectedId)) {
-                    gantt.close(selectedId);
-                }
-            }
-            
-            // Space to toggle expand/collapse
-            else if (e.key === ' ') {
-                e.preventDefault();
-                if (selectedId && gantt.hasChild(selectedId)) {
-                    if (gantt.getState().opened[selectedId]) {
-                        gantt.close(selectedId);
-                    } else {
-                        gantt.open(selectedId);
-                    }
-                }
-            }
-            
-            // Enter to edit task (if in edit mode)
-            else if (e.key === 'Enter' && !isReadOnly) {
-                e.preventDefault();
-                if (selectedId) {
-                    gantt.showLightbox(selectedId);
-                }
             }
         });
         

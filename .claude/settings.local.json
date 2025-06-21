@@ -11,7 +11,10 @@
       "Bash(ruby --version)",
       "Bash(tj3:*)",
       "Bash(gem install:*)",
-      "Bash(gem list:*)"
+      "Bash(gem list:*)",
+      "Bash(git pull:*)",
+      "Bash(python3:*)",
+      "Bash(poetry install:*)"
     ],
     "deny": []
   }
