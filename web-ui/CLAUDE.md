@@ -209,6 +209,7 @@ The command palette (Ctrl+K) provides the following commands:
 - **Clear all filters**: Remove all active filters
 
 ### View Commands
+- **Toggle dark mode**: Switch between light and dark theme
 - **Zoom to hour view**: Switch timeline to hourly scale
 - **Zoom to day view**: Switch timeline to daily scale
 - **Zoom to week view**: Switch timeline to weekly scale

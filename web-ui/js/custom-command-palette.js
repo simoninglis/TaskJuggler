@@ -205,6 +205,19 @@ class CustomCommandPalette {
             
             // View commands
             {
+                id: 'toggle-theme',
+                title: 'Toggle dark mode',
+                description: 'Switch between light and dark theme',
+                section: 'View',
+                keywords: 'theme dark light mode toggle switch',
+                icon: '🎨',
+                handler: () => {
+                    if (window.themeManager) {
+                        window.themeManager.toggleTheme();
+                    }
+                }
+            },
+            {
                 id: 'zoom-hour',
                 title: 'Zoom to hour view',
                 description: 'Switch timeline to hourly scale',

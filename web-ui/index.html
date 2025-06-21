@@ -10,23 +10,14 @@
     
     <!-- Custom styles -->
     <link rel="stylesheet" href="css/main.css" type="text/css">
+    <link rel="stylesheet" href="css/dark-theme.css" type="text/css">
 </head>
 <body>
     <div class="header">
-        <h1>TaskJuggler - Interactive Gantt Chart Prototype</h1>
-        <p>Modern web interface for TaskJuggler project management with DHTMLX Gantt</p>
-        
-        <div class="controls">
-            <div class="mode-indicator">
-                <span class="mode-label">Mode:</span>
-                <label class="switch">
-                    <input type="checkbox" id="editModeToggle" onchange="toggleReadOnly()">
-                    <span class="slider"></span>
-                </label>
-                <span class="mode-text" id="modeText">View Only</span>
-            </div>
-            <button onclick="window.keyboardHelp && window.keyboardHelp.toggle()" style="margin-left: 20px; padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                Help (?)
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 id="projectTitle">TaskJuggler</h1>
+            <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+                <span id="themeIcon">🌙</span>
             </button>
         </div>
     </div>
@@ -44,14 +35,7 @@
             <button onclick="clearAllFilters()" style="margin-left: 10px; padding: 4px 8px; background: #fff; border: 1px solid #1976d2; border-radius: 4px; color: #1976d2; cursor: pointer;">Clear Filter</button>
         </div>
         <div style="margin-top: 10px; font-size: 12px; color: #666;">
-            <strong>Keyboard shortcuts:</strong>
-            Press <kbd style="padding: 2px 6px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 3px;">?</kbd> for help | 
-            Ctrl+Shift+P: Command palette | 
-            /: Search tasks | 
-            F: Focus on area | 
-            ↑/↓: Navigate | 
-            ←/→: Collapse/Expand | 
-            +/-: Zoom
+            Press <kbd style="padding: 2px 6px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 3px;">?</kbd> for keyboard shortcuts
         </div>
     </div>
 
@@ -61,6 +45,7 @@
     <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
     
     <!-- Modular JavaScript files -->
+    <script src="js/theme-manager.js"></script>
     <script src="js/gantt-config.js"></script>
     <script src="js/gantt-data.js"></script>
     <script src="js/gantt-controls.js"></script>
