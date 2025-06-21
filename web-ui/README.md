@@ -32,8 +32,9 @@ Key bindings follow VIM conventions where applicable:
 - `test-project.tjp` - Sample TaskJuggler project file
 - `dev/` - Development tools and servers
   - `serve.py` - Basic HTTP server
-  - `serve-with-reload.py` - Auto-reload development server
-  - `serve-with-debug.py` - Debug server with WebSocket logging
+  - `serve-with-reload.py` - Auto-reload development server (deprecated)
+  - `serve-with-debug.py` - Debug server with WebSocket and file monitoring
+  - `test_server_push.py` - Example for server-to-browser push messages
   - `logs/` - Runtime logs
 - `tests/` - Automated test suite
   - `command_palette/` - Command palette functionality tests
@@ -56,6 +57,9 @@ Key bindings follow VIM conventions where applicable:
   - Grid visibility toggle
   - JSON export
 - **Real-time Status**: Shows current operations and data loading
+- **WebSocket Communication**: Bidirectional real-time updates between server and browser
+- **File Monitoring**: Instant reload when files change (no polling)
+- **Milestone Navigation**: VIM-like ]m and [m shortcuts for jumping between milestones
 - **Claude Code Integration Hooks**: Event handlers prepared for TJP file updates
 
 ## Usage
@@ -76,14 +80,14 @@ Key bindings follow VIM conventions where applicable:
 ### Development Server
 1. Start the development server:
    ```bash
-   poetry run python dev/serve-with-debug.py  # Recommended for development
+   poetry run python dev/serve-with-debug.py  # Recommended: WebSocket + file monitoring
    # OR
-   python dev/serve-with-reload.py            # Auto-reload server
+   python dev/serve-with-reload.py            # Deprecated: polling-based reload
    # OR  
-   python dev/serve.py                        # Basic server
+   python dev/serve.py                        # Basic server (no auto-reload)
    ```
 2. Open http://localhost:8001 in your browser
-3. Check `dev/logs/` for debug information
+3. Check `/tmp/webui-debug.log` for real-time debug information
 
 ### Running Tests
 ```bash

@@ -53,8 +53,8 @@ cd /home/singlis/work/TaskJuggler/web-ui && python3 dev/serve.py 2>&1 | tee /tmp
 
 ## Server Information
 
-- **Debug server**: HTTP on port 8001, WebSocket debug on port 8002, auto-reload enabled, logs to `/tmp/webui-debug.log`
-- **Auto-reload server**: Runs on port 8001, monitors file changes and auto-refreshes browser
+- **Debug server**: HTTP on port 8001, WebSocket on port 8002, file system monitoring with instant reload, logs to `/tmp/webui-debug.log`
+- **Auto-reload server**: Runs on port 8001, monitors file changes and auto-refreshes browser (deprecated - use debug server instead)
 - **Standard server**: Runs on port 8000, no auto-reload
 - **Log locations**: 
   - HTTP requests: `/tmp/webui-server.log`
@@ -63,11 +63,12 @@ cd /home/singlis/work/TaskJuggler/web-ui && python3 dev/serve.py 2>&1 | tee /tmp
 
 ## Debug Server Features
 
-The debug server provides real-time debugging via WebSocket:
-- Logs all keyboard events with full details
-- Tracks focus changes
-- Records custom debug messages
-- Writes to `/tmp/webui-debug.log` for Claude Code to read
+The debug server provides real-time communication via WebSocket:
+- **Browser → Server**: Debug messages, keyboard events, focus changes
+- **Server → Browser**: File change notifications, live updates, push messages
+- Instant auto-reload when files change (no polling)
+- Logs all activity to `/tmp/webui-debug.log` for Claude Code to read
+- Foundation for real-time TaskJuggler integration
 
 ## Poetry Environment
 
@@ -81,7 +82,8 @@ poetry run python serve-with-debug.py
 ```
 
 Dependencies:
-- `websockets`: For debug WebSocket server
+- `websockets`: For debug WebSocket server and real-time communication
+- `watchdog`: For file system monitoring and auto-reload
 - `playwright`: For automated testing of UI functionality
 
 ## Keyboard Navigation
@@ -178,8 +180,8 @@ lsof -i :8002  # WebSocket debug port
    - Check server status
    - Debug keyboard/focus issues
    - See HTTP requests
-   - Monitor file change detection (auto-reload)
-   - View real-time debug events
+   - Monitor file change notifications via WebSocket
+   - View real-time debug events and server push messages
 
 ## Implementation Details
 
@@ -194,7 +196,7 @@ window.debugLog('event', 'Keydown event', {
 ```
 
 ### Auto-Reload
-Both debug and auto-reload servers check for file changes every second and automatically refresh the browser when changes are detected.
+The debug server uses file system monitoring (watchdog) to detect changes and pushes reload notifications to browsers via WebSocket. This eliminates the need for constant polling and reduces server load.
 
 ## Command Palette Commands
 
@@ -232,14 +234,94 @@ The command palette (Ctrl+K) provides the following commands:
 
 ## Testing
 
-Run automated tests with Playwright:
-```bash
-cd /home/singlis/work/TaskJuggler/web-ui
-poetry run python test_keyboard_navigation.py
-poetry run python test_command_palette.py
-poetry run python test_simple_navigation.py
-poetry run python test_keyboard_help.py
-poetry run python test_help_palette_interaction.py
+The web UI uses Playwright with Python for automated testing. Tests are organized by feature area and use Poetry for dependency management.
+
+### Test Structure
+```
+tests/
+├── command_palette/    # Command palette tests
+├── keyboard/          # Keyboard navigation tests
+├── integration/       # Integration and feature tests
+└── run_tests.py      # Test runner script
+```
+
+### Running Tests
+
+**Prerequisites:**
+1. Start the debug server in a separate terminal:
+   ```bash
+   cd /home/singlis/work/TaskJuggler/web-ui
+   poetry run python dev/serve-with-debug.py
+   ```
+
+2. Run tests:
+   ```bash
+   # Run all tests
+   python run_tests.py all
+   
+   # Run specific category
+   python run_tests.py command_palette
+   python run_tests.py keyboard
+   python run_tests.py integration
+   
+   # Run individual test file
+   poetry run pytest tests/integration/test_milestones.py -v -s
+   ```
+
+### Writing Tests
+
+Example test structure:
+```python
+import pytest
+from playwright.sync_api import Page, expect
+import time
+
+def test_feature_name(page: Page):
+    """Test description"""
+    page.goto("http://localhost:8001")
+    
+    # Wait for Gantt to load
+    page.wait_for_selector("#gantt_here", state="visible")
+    time.sleep(2)  # Allow data to load
+    
+    # Interact with UI
+    page.click("#gantt_here")
+    page.keyboard.press("?")
+    
+    # Assert results
+    expect(page.locator(".keyboard-help-overlay")).to_be_visible()
+```
+
+### Common Test Patterns
+
+**Check Gantt data:**
+```python
+task_info = page.evaluate("""
+    () => {
+        if (typeof gantt === 'undefined') return null;
+        const tasks = gantt.getTaskByTime();
+        return tasks.map(task => ({
+            id: task.id,
+            text: task.text,
+            type: task.type
+        }));
+    }
+""")
+```
+
+**Debug console output:**
+```python
+# Use -s flag with pytest to see print statements
+print(f"Found {len(tasks)} tasks")
+```
+
+**Wait for dynamic content:**
+```python
+# Wait for specific element
+page.wait_for_selector(".gantt_task_line", state="visible")
+
+# Wait with timeout
+page.wait_for_timeout(1000)  # milliseconds
 ```
 
 ## Responsive Layout

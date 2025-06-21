@@ -7,6 +7,18 @@ License: GPL v2
 
 For development workflow and contribution guidelines, see WORKFLOW.md.
 
+## Design Guidelines
+
+### Web UI - VIM-Like Navigation
+The web UI follows VIM-inspired keyboard navigation principles:
+- Modal operation (different modes for different tasks)
+- Single-key commands for common operations
+- Mnemonic key choices (/ for search, ? for help, F for focus)
+- Minimal modifier keys required
+- Consistent escape to exit modes
+
+This makes the UI efficient for keyboard users and maintains consistency with developer tools.
+
 ## Current Work
 
 ### ✅ Completed Features

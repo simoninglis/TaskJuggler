@@ -25,6 +25,16 @@
       "dependencies": []
     },
     {
+      "id": "project.design.complete",
+      "name": "Design Phase Complete",
+      "type": "milestone",
+      "start": "2025-01-06",
+      "end": "2025-01-06",
+      "duration": 0,
+      "progress": 100,
+      "dependencies": ["project.design"]
+    },
+    {
       "id": "project.development",
       "name": "Development",
       "type": "container",
@@ -53,6 +63,16 @@
       "duration": 24,
       "progress": 20,
       "dependencies": ["project.development.backend"]
+    },
+    {
+      "id": "project.development.beta",
+      "name": "Beta Release",
+      "type": "milestone",
+      "start": "2025-02-21",
+      "end": "2025-02-21",
+      "duration": 0,
+      "progress": 0,
+      "dependencies": ["project.development.frontend"]
     },
     {
       "id": "project.testing",
@@ -163,6 +183,16 @@
       "duration": 2,
       "progress": 0,
       "dependencies": ["project.testing"]
+    },
+    {
+      "id": "project.golive",
+      "name": "Go-Live",
+      "type": "milestone",
+      "start": "2025-03-17",
+      "end": "2025-03-17",
+      "duration": 0,
+      "progress": 0,
+      "dependencies": ["project.deployment"]
     }
   ]
 }

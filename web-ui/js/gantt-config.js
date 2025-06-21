@@ -3,6 +3,11 @@
 
 // Initialize DHTMLX Gantt configuration
 function initializeGanttConfig() {
+    // Ensure task types are properly defined
+    gantt.config.types.task = "task";
+    gantt.config.types.project = "project";
+    gantt.config.types.milestone = "milestone";
+    
     // Configure DHTMLX Gantt
     gantt.config.date_format = "%Y-%m-%d";
     
@@ -46,9 +51,49 @@ function initializeGanttConfig() {
         return task.text;
     };
     
+    // Apply CSS classes based on task type (essential for milestone diamond styling)
+    gantt.templates.task_class = function(start, end, task) {
+        if (task.type === gantt.config.types.milestone) {
+            return "gantt_milestone";
+        }
+        return "";
+    };
+    
+    // Configure milestone label display (show text to the right of diamond)
+    gantt.templates.rightside_text = function(start, end, task) {
+        if (task.type === gantt.config.types.milestone) {
+            return task.text;
+        }
+        return "";
+    };
+    
     // Initialize the gantt chart
     gantt.config.readonly = true;  // Start in read-only mode
     gantt.init("gantt_here");
+    
+    // Debug milestone rendering
+    if (window.debugLog) {
+        // Check milestone configuration
+        window.debugLog('milestone', 'Milestone configuration initialized', {
+            types: gantt.config.types,
+            milestoneType: gantt.config.types.milestone,
+            rightSideTextDefined: typeof gantt.templates.rightside_text === 'function'
+        });
+        
+        // Monitor milestone rendering
+        gantt.attachEvent("onAfterTaskDisplay", function(id, task) {
+            if (task.type === gantt.config.types.milestone) {
+                window.debugLog('milestone', 'Milestone rendered', {
+                    id: task.id,
+                    text: task.text,
+                    type: task.type,
+                    date: task.start_date,
+                    domElement: !!gantt.getTaskNode(id)
+                });
+            }
+            return true;
+        });
+    }
     
     // Ensure gantt container is focusable
     const ganttContainer = document.getElementById('gantt_here');

@@ -1,0 +1,52 @@
+# TaskJuggler Web UI Server Commands
+
+# Start debug server with WebSocket logging and file output
+debug:
+    poetry run python dev/serve-with-debug.py 2>&1 | tee /tmp/webui-server.log
+
+# Start auto-reload server with file output
+dev:
+    python3 dev/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
+
+# Start standard server with file output
+serve:
+    python3 dev/serve.py 2>&1 | tee /tmp/webui-server.log
+
+# View HTTP server logs
+logs:
+    tail -f /tmp/webui-server.log
+
+# View debug WebSocket logs (debug server only)
+debug-logs:
+    tail -f /tmp/webui-debug.log
+
+# View both log files simultaneously
+logs-all:
+    tail -f /tmp/webui-server.log /tmp/webui-debug.log
+
+# Kill any running servers on ports 8000, 8001, 8002
+kill-servers:
+    -lsof -ti:8000 | xargs -r kill -9
+    -lsof -ti:8001 | xargs -r kill -9
+    -lsof -ti:8002 | xargs -r kill -9
+
+# Check if servers are running
+status:
+    @echo "Checking for running servers..."
+    @ps aux | grep -E "serve(-with-reload|-with-debug)?\.py" | grep -v grep || echo "No servers running"
+    @echo "\nPort usage:"
+    @lsof -i :8000 || echo "Port 8000: free"
+    @lsof -i :8001 || echo "Port 8001: free"
+    @lsof -i :8002 || echo "Port 8002: free"
+
+# Clean up log files
+clean-logs:
+    rm -f /tmp/webui-server.log /tmp/webui-debug.log
+
+# Install npm dependencies
+install:
+    npm install
+
+# Run tests
+test:
+    poetry run python run_tests.py

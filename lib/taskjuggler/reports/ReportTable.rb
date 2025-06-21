@@ -14,6 +14,7 @@
 
 require 'taskjuggler/reports/ReportTableColumn'
 require 'taskjuggler/reports/ReportTableLine'
+require 'taskjuggler/reports/GanttChart'
 
 class TaskJuggler
 
@@ -157,6 +158,35 @@ class TaskJuggler
           lineIdx += 1
         end
         csv
+      end
+    end
+
+    def to_json
+      require 'json'
+      
+      # Check if this table contains a Gantt chart in any cell
+      gantt_chart = nil
+      @columns.each do |col|
+        if col.cell1 && col.cell1.special && col.cell1.special.is_a?(GanttChart)
+          gantt_chart = col.cell1.special
+          break
+        end
+      end
+      
+      if gantt_chart
+        # Delegate to the GanttChart's to_json method
+        gantt_chart.to_json
+      else
+        # Generic table data
+        data = {
+          columns: @columns.map { |col| 
+            col.cell1 ? col.cell1.text.to_s : col.to_s 
+          },
+          rows: @lines.map { |line| 
+            line.cells.map { |cell| cell.text.to_s }
+          }
+        }
+        data.to_json
       end
     end
 

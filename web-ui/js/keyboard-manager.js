@@ -33,6 +33,9 @@ class KeyboardManager {
         // Debug logging
         this.debugEnabled = typeof window.debugLog === 'function';
         
+        // Prefix key for multi-key sequences
+        this.prefixKey = null;
+        
         // Initialize the manager
         this.initialize();
     }
@@ -528,6 +531,40 @@ class KeyboardManager {
             activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
             selectedTask: typeof gantt !== 'undefined' && gantt.getSelectedId ? gantt.getSelectedId() : 'unknown'
         });
+        
+        // Handle prefix keys for multi-key sequences
+        if (e.key === ']' || e.key === '[') {
+            this.prefixKey = e.key;
+            this.debug('Prefix key captured', { prefix: this.prefixKey });
+            return 'handled';
+        }
+        
+        // Handle multi-key sequences
+        if (this.prefixKey) {
+            const sequence = this.prefixKey + e.key;
+            this.debug('Multi-key sequence', { sequence });
+            
+            switch (sequence) {
+                case ']m':
+                    if (typeof navigateToNextMilestone === 'function') {
+                        navigateToNextMilestone();
+                    }
+                    this.prefixKey = null;
+                    return 'handled';
+                    
+                case '[m':
+                    if (typeof navigateToPreviousMilestone === 'function') {
+                        navigateToPreviousMilestone();
+                    }
+                    this.prefixKey = null;
+                    return 'handled';
+                    
+                default:
+                    // Unknown sequence, reset
+                    this.prefixKey = null;
+                    break;
+            }
+        }
         
         // Gantt navigation and controls
         switch (e.key) {

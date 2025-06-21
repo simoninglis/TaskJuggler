@@ -400,3 +400,29 @@ mark {
         transform: translateY(0) scale(1);
     }
 }
+
+/* Milestone styling - ensure diamond shape is visible */
+.gantt_task_line.gantt_milestone {
+    visibility: visible !important;
+    background-color: #FFD700; /* Gold color */
+    border: 2px solid #FFA500; /* Orange border */
+    width: 18px !important;
+    height: 18px !important;
+    transform: rotate(45deg);
+    margin-top: -9px;
+    border-radius: 0; /* Override any inherited border-radius */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Add subtle shadow for visibility */
+}
+
+/* Milestone content - hide text inside diamond */
+.gantt_task_line.gantt_milestone .gantt_task_content {
+    display: none;
+}
+
+/* Ensure rightside text is visible for milestones */
+.gantt_side_content.gantt_right {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary, #333);
+    transition: color 0.3s ease;
+}

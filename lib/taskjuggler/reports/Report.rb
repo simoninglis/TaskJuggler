@@ -98,6 +98,8 @@ class TaskJuggler
           generateTJP
         when :mspxml
           generateMspXml
+        when :json
+          generateJSON
         else
           raise 'Unknown report output format #{format}.'
         end
@@ -384,6 +386,25 @@ EOT
         f.puts "#{@content.to_ctags}"
       rescue IOError, SystemCallError
         error('write_ctags', "Cannot write to file #{@name}.\n#{$!}",
+              sourceFileInfo)
+      end
+    end
+
+    def generateJSON
+      unless @content.respond_to?('to_json')
+        warning('json_not_supported',
+                "JSON format is not supported for report #{@id} of " +
+                "type #{@typeSpec}.")
+        return nil
+      end
+
+      begin
+        fileName = absoluteFileName(@name + '.json')
+        f = @name == '.' ? $stdout : File.new(fileName, 'w')
+        f.puts(@content.to_json)
+        f.close unless @name == '.'
+      rescue IOError, SystemCallError
+        error('write_json', "Cannot write to file #{fileName}.\n#{$!}",
               sourceFileInfo)
       end
     end

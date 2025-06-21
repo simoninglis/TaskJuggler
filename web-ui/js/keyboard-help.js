@@ -37,6 +37,8 @@ class KeyboardHelp {
                     { keys: 'Space', description: 'Toggle expand/collapse for parent tasks' },
                     { keys: 'Enter', description: 'Toggle expand (parent) or Edit (leaf in edit mode)' },
                     { keys: 'g', description: 'Go to... (today, project start/end, milestones, months)' },
+                    { keys: ']m', description: 'Jump to next milestone' },
+                    { keys: '[m', description: 'Jump to previous milestone' },
                     { keys: 'Home', description: 'Jump to timeline start' },
                     { keys: 'End', description: 'Jump to timeline end' }
                 ]

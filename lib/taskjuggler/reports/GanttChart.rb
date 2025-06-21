@@ -207,6 +207,47 @@ class TaskJuggler
       0
     end
 
+    def to_json
+      require 'json'
+      
+      completeChart
+      
+      # Extract tasks data from the lines
+      tasks = []
+      @lines.each_with_index do |line, index|
+        # Get the property (task or resource) for this line
+        property = line.query.property
+        
+        # Skip if not a task
+        next unless property.is_a?(Task)
+        
+        task_data = {
+          id: property.fullId,
+          name: property.name || property.id,
+          type: property.container? ? 'container' : 
+                property.milestone? ? 'milestone' : 'task',
+          start: property.get('start').to_s('%Y-%m-%d'),
+          end: property.get('end').to_s('%Y-%m-%d'),
+          duration: (property.get('end') - property.get('start')) / (24 * 60 * 60),
+          progress: property.get('complete') * 100,
+          dependencies: property.get('depends').map { |dep| dep.fullId }
+        }
+        
+        tasks << task_data
+      end
+      
+      # Chart metadata
+      chart_data = {
+        project: @table.project.name,
+        start: @start.to_s('%Y-%m-%d'),
+        end: @end.to_s('%Y-%m-%d'),
+        scale: @scale.to_s,
+        tasks: tasks
+      }
+      
+      chart_data.to_json
+    end
+
     # Utility function that convers a date to the corresponding X-position in
     # the Gantt chart.
     def dateToX(date)

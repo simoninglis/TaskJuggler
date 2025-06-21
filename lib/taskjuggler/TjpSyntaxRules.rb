@@ -3149,6 +3149,11 @@ EOT
       :niku
     })
     descr('Generate an XOG XML file to be used with Clarity.')
+
+    pattern(%w( _json ), lambda {
+      :json
+    })
+    descr('Generate a JSON file for web-based interactive charts.')
   end
 
   def rule_outputFormats

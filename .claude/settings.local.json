@@ -14,7 +14,27 @@
       "Bash(gem list:*)",
       "Bash(git pull:*)",
       "Bash(python3:*)",
-      "Bash(poetry install:*)"
+      "Bash(poetry install:*)",
+      "Bash(curl:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(poetry --version)",
+      "Bash(poetry install:*)",
+      "Bash(npm init:*)",
+      "Bash(poetry add:*)",
+      "Bash(poetry run:*)",
+      "Bash(git reset:*)",
+      "Bash(cat:*)",
+      "Bash(rg:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(python run_tests.py:*)",
+      "Bash(npm install:*)",
+      "Bash(rake test:*)",
+      "Bash(rm:*)",
+      "Bash(npm test:*)",
+      "Bash(poetry lock:*)",
+      "WebFetch(domain:docs.dhtmlx.com)"
     ],
     "deny": []
   }
