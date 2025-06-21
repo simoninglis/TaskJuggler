@@ -1,0 +1,397 @@
+// Command Palette Setup
+// This file handles Ninja Keys command palette initialization and commands
+// State management is now handled by KeyboardManager
+
+// Helper function to explicitly close the command palette
+function closePalette() {
+    const ninja = document.getElementById('commandPalette');
+    if (ninja) {
+        // Use multiple escape dispatches with slight delays to ensure it gets through
+        const dispatchEscape = () => {
+            const escapeEvent = new KeyboardEvent('keydown', {
+                key: 'Escape',
+                keyCode: 27,
+                bubbles: true,
+                cancelable: true
+            });
+            ninja.dispatchEvent(escapeEvent);
+        };
+        
+        // Dispatch escape immediately
+        dispatchEscape();
+        
+        // Dispatch again after a short delay as backup
+        setTimeout(dispatchEscape, 10);
+        
+        // Force update keyboard manager state after a delay
+        setTimeout(() => {
+            if (window.keyboardManager) {
+                window.keyboardManager.forceStateUpdate();
+            }
+        }, 100);
+        
+        if (window.debugLog) {
+            window.debugLog('debug', 'Dispatching escape to close palette');
+        }
+    }
+}
+
+// Initialize command palette
+function initializeCommandPalette() {
+    const ninja = document.getElementById('commandPalette');
+    if (!ninja) {
+        console.error('Command palette element not found');
+        return;
+    }
+    
+    // Define available commands
+    const commands = [
+        {
+            id: 'filter-overdue',
+            title: 'Filter: Overdue tasks',
+            section: 'Filters',
+            keywords: 'overdue late past due',
+            icon: '⏰',
+            handler: () => {
+                filterOverdueTasks();
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'filter-today',
+            title: 'Filter: Tasks active today',
+            section: 'Filters',
+            keywords: 'today current now',
+            icon: '📅',
+            handler: () => {
+                filterTodayTasks();
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'filter-week',
+            title: 'Filter: Tasks this week',
+            section: 'Filters',
+            keywords: 'week 7 days',
+            icon: '📆',
+            handler: () => {
+                filterWeekTasks();
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'filter-completed',
+            title: 'Filter: Completed tasks',
+            section: 'Filters',
+            keywords: 'done finished complete 100%',
+            icon: '✅',
+            handler: () => {
+                filterCompletedTasks();
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'filter-in-progress',
+            title: 'Filter: In progress tasks',
+            section: 'Filters',
+            keywords: 'progress active working',
+            icon: '🔄',
+            handler: () => {
+                filterInProgressTasks();
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'clear-filters',
+            title: 'Clear all filters',
+            section: 'Filters',
+            keywords: 'clear reset remove filters all',
+            icon: '🧹',
+            handler: () => {
+                clearAllFilters();
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'zoom-day',
+            title: 'Zoom: Day view',
+            section: 'View',
+            keywords: 'zoom day daily',
+            icon: '🔍',
+            handler: () => {
+                setZoom('day');
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'zoom-week',
+            title: 'Zoom: Week view',
+            section: 'View',
+            keywords: 'zoom week weekly',
+            icon: '🔍',
+            handler: () => {
+                setZoom('week');
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'zoom-month',
+            title: 'Zoom: Month view',
+            section: 'View',
+            keywords: 'zoom month monthly',
+            icon: '🔍',
+            handler: () => {
+                setZoom('month');
+                closePalette();
+                return { mode: 'closed' };
+            }
+        },
+        {
+            id: 'expand-all',
+            title: 'Expand all tasks',
+            section: 'View',
+            keywords: 'expand open all show',
+            icon: '📂',
+            handler: () => {
+                try {
+                    expandAll();
+                    closePalette();
+                    return { mode: 'closed' };
+                } catch (error) {
+                    console.error('Error in expand-all handler:', error);
+                    updateStatus('Error expanding tasks: ' + error.message);
+                    closePalette();
+                    return { mode: 'closed' };
+                }
+            }
+        },
+        {
+            id: 'collapse-all',
+            title: 'Collapse all tasks',
+            section: 'View',
+            keywords: 'collapse close all hide',
+            icon: '📁',
+            handler: () => {
+                try {
+                    collapseAll();
+                    closePalette();
+                    return { mode: 'closed' };
+                } catch (error) {
+                    console.error('Error in collapse-all handler:', error);
+                    updateStatus('Error collapsing tasks: ' + error.message);
+                    closePalette();
+                    return { mode: 'closed' };
+                }
+            }
+        }
+    ];
+    
+    // Set the commands
+    ninja.data = commands;
+    
+    // Configure hotkeys (Ctrl+Shift+P / Cmd+Shift+P)
+    ninja.setAttribute('hotkeys', 'ctrl+shift+p,cmd+shift+p');
+    
+    // Add custom styling
+    const style = document.createElement('style');
+    style.textContent = `
+        ninja-keys {
+            --ninja-width: 640px;
+            --ninja-backdrop-filter: blur(10px);
+            --ninja-overflow-background: rgba(255, 255, 255, 0.5);
+            --ninja-text-color: #333;
+            --ninja-font-size: 14px;
+            --ninja-top: 20%;
+            --ninja-selected-background: #007bff;
+            --ninja-secondary-text-color: #666;
+            --ninja-modal-background: #fff;
+            --ninja-modal-shadow: 0 16px 48px rgba(0,0,0,0.15);
+        }
+    `;
+    document.head.appendChild(style);
+    
+    if (window.debugLog) {
+        window.debugLog('info', 'Command palette initialized with ' + commands.length + ' commands');
+    }
+}
+
+// ===================
+// Filter Functions
+// ===================
+
+function filterOverdueTasks() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const allTasks = gantt.getTaskByTime();
+    const overdueTasks = allTasks.filter(task => {
+        const endDate = new Date(task.end_date);
+        return endDate < today && task.progress < 1;
+    });
+    
+    applyTaskFilter(overdueTasks, 'Showing overdue tasks');
+}
+
+function filterTodayTasks() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const allTasks = gantt.getTaskByTime();
+    const todayTasks = allTasks.filter(task => {
+        const start = new Date(task.start_date);
+        const end = new Date(task.end_date);
+        return start <= tomorrow && end >= today;
+    });
+    
+    applyTaskFilter(todayTasks, 'Showing tasks active today');
+}
+
+function filterWeekTasks() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(today);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    
+    const allTasks = gantt.getTaskByTime();
+    const weekTasks = allTasks.filter(task => {
+        const start = new Date(task.start_date);
+        const end = new Date(task.end_date);
+        return (start <= weekEnd && end >= today) || (start >= today && start <= weekEnd);
+    });
+    
+    applyTaskFilter(weekTasks, 'Showing tasks for this week');
+}
+
+function filterCompletedTasks() {
+    const allTasks = gantt.getTaskByTime();
+    const completedTasks = allTasks.filter(task => task.progress >= 1);
+    
+    applyTaskFilter(completedTasks, 'Showing completed tasks');
+}
+
+function filterInProgressTasks() {
+    const allTasks = gantt.getTaskByTime();
+    const inProgressTasks = allTasks.filter(task => task.progress > 0 && task.progress < 1);
+    
+    applyTaskFilter(inProgressTasks, 'Showing in-progress tasks');
+}
+
+function applyTaskFilter(filteredTasks, message) {
+    // Save original data if not already saved
+    if (!window.originalGanttData) {
+        window.originalGanttData = gantt.serialize();
+    }
+    
+    // Get all task IDs that should be shown (including parents)
+    const tasksToShow = new Set();
+    
+    filteredTasks.forEach(task => {
+        // Add the task itself
+        tasksToShow.add(task.id);
+        
+        // Add all parent tasks
+        let parentId = task.parent;
+        while (parentId && parentId !== 0) {
+            tasksToShow.add(parentId);
+            const parent = gantt.getTask(parentId);
+            if (parent) {
+                parentId = parent.parent;
+            } else {
+                break;
+            }
+        }
+        
+        // Add all children of filtered tasks
+        addAllChildrenForFilter(task.id, tasksToShow);
+    });
+    
+    // Create filtered data
+    const allTasks = window.originalGanttData.data;
+    const filteredData = {
+        data: allTasks.filter(task => tasksToShow.has(task.id)),
+        links: window.originalGanttData.links
+    };
+    
+    // Apply filter
+    gantt.clearAll();
+    gantt.parse(filteredData);
+    
+    // Expand filtered parent tasks
+    filteredData.data.forEach(task => {
+        if (task.type === gantt.config.types.project || gantt.hasChild(task.id)) {
+            gantt.open(task.id);
+        }
+    });
+    
+    updateStatus(message + ` (${filteredTasks.length} tasks)`);
+    
+    // Show active filter indicator
+    const filterDiv = document.getElementById('activeFilters');
+    const filterDesc = document.getElementById('filterDescription');
+    if (filterDiv && filterDesc) {
+        filterDiv.style.display = 'block';
+        filterDesc.textContent = message;
+    }
+}
+
+function addAllChildrenForFilter(parentId, includeSet) {
+    gantt.eachTask(function(child) {
+        includeSet.add(child.id);
+        if (gantt.hasChild(child.id)) {
+            addAllChildrenForFilter(child.id, includeSet);
+        }
+    }, parentId);
+}
+
+function clearAllFilters() {
+    if (window.originalGanttData) {
+        gantt.clearAll();
+        gantt.parse(window.originalGanttData);
+        updateStatus('All filters cleared');
+        
+        // Hide active filter indicator
+        const filterDiv = document.getElementById('activeFilters');
+        if (filterDiv) {
+            filterDiv.style.display = 'none';
+        }
+    } else {
+        updateStatus('No filters to clear');
+    }
+}
+
+// ===================
+// Setup Function
+// ===================
+
+// Initialize command palette after DOM is ready and custom elements are defined
+function setupCommandPalette() {
+    setTimeout(() => {
+        // Wait for ninja-keys to be defined as a custom element
+        customElements.whenDefined('ninja-keys').then(() => {
+            if (window.debugLog) window.debugLog('debug', 'ninja-keys custom element defined, initializing');
+            initializeCommandPalette();
+        }).catch(err => {
+            console.error('Error waiting for ninja-keys:', err);
+            // Try to initialize anyway
+            initializeCommandPalette();
+        });
+    }, 100);
+}
+
+// Helper function for backward compatibility (used by some tests)
+function forcePaletteClosure() {
+    // This is now handled by KeyboardManager, but keeping for backward compatibility
+    if (window.keyboardManager) {
+        window.keyboardManager.forceStateUpdate();
+    }
+}

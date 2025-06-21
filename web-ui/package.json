@@ -1,0 +1,15 @@
+{
+  "name": "web-ui",
+  "version": "1.0.0",
+  "description": "This directory contains a prototype for a modern, interactive Gantt chart interface using DHTMLX Gantt library.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dhtmlx-gantt": "^9.0.12"
+  }
+}
