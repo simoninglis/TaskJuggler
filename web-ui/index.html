@@ -894,36 +894,56 @@
         
         // Helper functions for navigation
         function selectPreviousTask() {
-            const tasks = gantt.getTaskByTime();
+            const allTasks = gantt.getTaskByTime();
+            // Filter to only visible tasks
+            const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
             const selectedId = gantt.getSelectedId();
             
-            if (!selectedId && tasks.length > 0) {
-                gantt.selectTask(tasks[0].id);
-                gantt.showTask(tasks[0].id);
+            if (window.debugLog) {
+                window.debugLog('debug', 'Selecting previous task', {
+                    totalTasks: allTasks.length,
+                    visibleTasks: visibleTasks.length,
+                    currentSelection: selectedId
+                });
+            }
+            
+            if (!selectedId && visibleTasks.length > 0) {
+                gantt.selectTask(visibleTasks[0].id);
+                gantt.showTask(visibleTasks[0].id);
                 return;
             }
             
-            let currentIndex = tasks.findIndex(t => t.id === selectedId);
+            let currentIndex = visibleTasks.findIndex(t => t.id === selectedId);
             if (currentIndex > 0) {
-                gantt.selectTask(tasks[currentIndex - 1].id);
-                gantt.showTask(tasks[currentIndex - 1].id);
+                gantt.selectTask(visibleTasks[currentIndex - 1].id);
+                gantt.showTask(visibleTasks[currentIndex - 1].id);
             }
         }
         
         function selectNextTask() {
-            const tasks = gantt.getTaskByTime();
+            const allTasks = gantt.getTaskByTime();
+            // Filter to only visible tasks
+            const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
             const selectedId = gantt.getSelectedId();
             
-            if (!selectedId && tasks.length > 0) {
-                gantt.selectTask(tasks[0].id);
-                gantt.showTask(tasks[0].id);
+            if (window.debugLog) {
+                window.debugLog('debug', 'Selecting next task', {
+                    totalTasks: allTasks.length,
+                    visibleTasks: visibleTasks.length,
+                    currentSelection: selectedId
+                });
+            }
+            
+            if (!selectedId && visibleTasks.length > 0) {
+                gantt.selectTask(visibleTasks[0].id);
+                gantt.showTask(visibleTasks[0].id);
                 return;
             }
             
-            let currentIndex = tasks.findIndex(t => t.id === selectedId);
-            if (currentIndex < tasks.length - 1) {
-                gantt.selectTask(tasks[currentIndex + 1].id);
-                gantt.showTask(tasks[currentIndex + 1].id);
+            let currentIndex = visibleTasks.findIndex(t => t.id === selectedId);
+            if (currentIndex < visibleTasks.length - 1) {
+                gantt.selectTask(visibleTasks[currentIndex + 1].id);
+                gantt.showTask(visibleTasks[currentIndex + 1].id);
             }
         }
         
