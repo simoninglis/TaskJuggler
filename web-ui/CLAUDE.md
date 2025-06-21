@@ -50,6 +50,7 @@ poetry run python serve-with-debug.py
 
 Dependencies:
 - `websockets`: For debug WebSocket server
+- `playwright`: For automated testing of UI functionality
 
 ## Keyboard Navigation
 
@@ -58,9 +59,10 @@ The web UI implements custom keyboard navigation:
 - **Arrow Left/Right**: Collapse/expand tasks with children
 - **+/-**: Zoom in/out on the timeline
 - **Ctrl+F**: Focus search box
+- **Ctrl+K**: Open command palette
 - **Space**: Toggle expand/collapse for parent tasks
 - **Enter**: Toggle expand/collapse for parent tasks, or edit leaf tasks (when in edit mode)
-- **Escape**: Clear search (when search is focused)
+- **Escape**: Clear search (when search is focused) or close command palette
 
 ## Known Issues & Solutions
 
@@ -73,6 +75,20 @@ The web UI implements custom keyboard navigation:
 - Visual issue where row highlighting and cell outline can get out of sync
 - Related to DHTMLX's internal focus management switching between elements
 - Focus can be on "DIV", "BODY", or "DIV#gantt_here"
+
+### Command Palette Integration (Ninja Keys)
+- Uses Ninja Keys web component for VS Code-style command palette
+- Shadow DOM requires special handling for state detection
+- **Key insight**: Check for `.backdrop` element in shadow DOM as reliable indicator of open state
+- The `.modal.visible` class may persist after closing, making it unreliable
+- Event handling must account for web component's shadow DOM encapsulation
+- Initialize after `customElements.whenDefined('ninja-keys')` to ensure proper setup
+
+### Web Component Event Handling
+- Avoid using capture phase (`true` parameter) in addEventListener when integrating with web components
+- Web components may use shadow DOM which affects event propagation
+- Use MutationObserver to track attribute changes on custom elements
+- Test both light DOM attributes and shadow DOM state for accurate detection
 
 ### Port Already in Use
 ```bash
@@ -126,6 +142,38 @@ window.debugLog('event', 'Keydown event', {
 ### Auto-Reload
 Both debug and auto-reload servers check for file changes every second and automatically refresh the browser when changes are detected.
 
+## Command Palette Commands
+
+The command palette (Ctrl+K) provides the following commands:
+
+### Filter Commands
+- **Show overdue tasks**: Filter to tasks with end dates before today
+- **Show tasks due today**: Filter to tasks ending today
+- **Show tasks due this week**: Filter to tasks ending within 7 days
+- **Show completed tasks**: Filter to tasks with 100% progress
+- **Show in-progress tasks**: Filter to tasks with progress between 1-99%
+- **Clear all filters**: Remove all active filters
+
+### View Commands
+- **Zoom to hour view**: Switch timeline to hourly scale
+- **Zoom to day view**: Switch timeline to daily scale
+- **Zoom to week view**: Switch timeline to weekly scale
+- **Zoom to month view**: Switch timeline to monthly scale
+- **Zoom to quarter view**: Switch timeline to quarterly scale
+- **Zoom to year view**: Switch timeline to yearly scale
+- **Expand all tasks**: Open all parent tasks
+- **Collapse all tasks**: Close all parent tasks
+
+## Testing
+
+Run automated tests with Playwright:
+```bash
+cd /home/singlis/work/TaskJuggler/web-ui
+poetry run python test_keyboard_navigation.py
+poetry run python test_command_palette.py
+poetry run python test_simple_navigation.py
+```
+
 ## Important Notes
 
 - The server will run continuously until stopped with Ctrl+C
@@ -133,3 +181,5 @@ Both debug and auto-reload servers check for file changes every second and autom
 - The debug server is most useful for troubleshooting keyboard/focus issues
 - Both auto-reload servers inject JavaScript to monitor file changes
 - All servers add CORS headers for local development
+- When debugging web components, check both light DOM and shadow DOM state
+- The command palette uses Ninja Keys which is a web component with shadow DOM
