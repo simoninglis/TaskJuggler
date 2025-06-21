@@ -243,17 +243,31 @@
     <div class="status">
         <h3>Status</h3>
         <div id="status">Ready. Loading sample TaskJuggler data...</div>
+        <div id="activeFilters" style="margin-top: 10px; padding: 8px; background: #e3f2fd; border-radius: 4px; display: none;">
+            <strong style="color: #1976d2;">Active Filter:</strong>
+            <span id="filterDescription"></span>
+            <button onclick="clearAllFilters()" style="margin-left: 10px; padding: 4px 8px; background: #fff; border: 1px solid #1976d2; border-radius: 4px; color: #1976d2; cursor: pointer;">Clear Filter</button>
+        </div>
         <div style="margin-top: 10px; font-size: 12px; color: #666;">
             <strong>Keyboard shortcuts:</strong>
+            Ctrl+K: Command palette | 
             Ctrl+F: Search | 
             ↑/↓: Navigate | 
             ←/→: Collapse/Expand | 
+            Shift+←/→: Scroll timeline | 
+            Home/End: Jump to start/end | 
             Space: Toggle expand | 
             +/-: Zoom | 
             Enter: Toggle expand/collapse (parent tasks) or Edit (leaf tasks in edit mode)
         </div>
     </div>
 
+    <!-- Ninja Keys command palette element -->
+    <ninja-keys id="commandPalette"></ninja-keys>
+
+    <!-- Ninja Keys command palette -->
+    <script type="module" src="https://unpkg.com/ninja-keys?module"></script>
+    
     <!-- DHTMLX Gantt JS -->
     <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
     
@@ -308,6 +322,10 @@
         let originalData = null;
         let searchTimeout = null;
         let isFiltered = false;
+        let isCommandPaletteOpen = false;  // Track command palette state
+        
+        // Expose currentZoom for testing
+        window.currentZoom = currentZoom;
         
         // Load TaskJuggler data
         function loadTaskJugglerData() {
@@ -578,6 +596,10 @@
         }
         
         function setZoom(zoom) {
+            // Update current zoom level
+            currentZoom = zoom;
+            window.currentZoom = zoom;  // Update window property for testing
+            
             // Reset date scale template to default first
             gantt.templates.date_scale = null;
             
@@ -632,6 +654,56 @@
             }
             gantt.render();
             updateStatus(`Zoom level: ${zoom}`);
+        }
+        
+        function calculateScrollAmount() {
+            // Calculate scroll amount based on the minor unit size of current zoom level
+            // This makes scrolling consistent - one keypress = one minor grid unit
+            
+            // Get the current date range visible in the gantt
+            const state = gantt.getState();
+            const minDate = state.min_date;
+            const maxDate = state.max_date;
+            
+            // Calculate dates for one minor unit movement
+            let nextDate;
+            switch(currentZoom) {
+                case "hour":
+                    // Minor unit is hour - scroll by 1 hour
+                    nextDate = gantt.date.add(minDate, 1, "hour");
+                    break;
+                case "day":
+                    // Minor unit is day - scroll by 1 day
+                    nextDate = gantt.date.add(minDate, 1, "day");
+                    break;
+                case "week":
+                    // Minor unit is day (subscale) - scroll by 1 day
+                    nextDate = gantt.date.add(minDate, 1, "day");
+                    break;
+                case "month":
+                    // Minor unit is week (subscale) - scroll by 1 week
+                    nextDate = gantt.date.add(minDate, 1, "week");
+                    break;
+                case "quarter":
+                    // Minor unit is month (subscale) - scroll by 1 month
+                    nextDate = gantt.date.add(minDate, 1, "month");
+                    break;
+                case "year":
+                    // Minor unit is quarter (subscale) - scroll by 3 months
+                    nextDate = gantt.date.add(minDate, 3, "month");
+                    break;
+                default:
+                    // Default to 1 day
+                    nextDate = gantt.date.add(minDate, 1, "day");
+            }
+            
+            // Convert the date difference to pixels
+            const startPos = gantt.posFromDate(minDate);
+            const nextPos = gantt.posFromDate(nextDate);
+            const scrollAmount = Math.abs(nextPos - startPos);
+            
+            // Ensure minimum scroll amount
+            return Math.max(scrollAmount, 10);
         }
         
         function toggleGrid() {
@@ -700,7 +772,42 @@
         }, 500);
         
         document.addEventListener('keydown', function(e) {
-                // Log all keydown events for debugging
+                // Check if command palette is open FIRST, before logging
+                const ninja = document.getElementById('commandPalette');
+                if (ninja) {
+                    // Check if ninja-keys is actively shown (has visible attribute or shadow root modal)
+                    const hasVisibleAttr = ninja.hasAttribute('visible');
+                    const hasOpenClass = ninja.classList.contains('open');
+                    
+                    // Check shadow DOM for visible modal element
+                    let hasShadowModal = false;
+                    if (ninja.shadowRoot) {
+                        // Check for backdrop as more reliable indicator
+                        const backdrop = ninja.shadowRoot.querySelector('.backdrop');
+                        hasShadowModal = !!backdrop;
+                    }
+                    
+                    const isPaletteOpen = hasVisibleAttr || hasOpenClass || hasShadowModal || isCommandPaletteOpen;
+                    
+                    if (window.debugLog && (hasVisibleAttr || hasOpenClass || hasShadowModal)) {
+                        window.debugLog('debug', 'Command palette state check', {
+                            hasVisibleAttr,
+                            hasOpenClass,
+                            hasShadowModal,
+                            isCommandPaletteOpen,
+                            isPaletteOpen
+                        });
+                    }
+                    
+                    if (isPaletteOpen) {
+                        if (window.debugLog) window.debugLog('debug', 'Command palette is open, ignoring key: ' + e.key);
+                        // Don't handle ANY keys when command palette is open
+                        // Let Ninja Keys handle all keyboard events
+                        return;
+                    }
+                }
+                
+                // Log all keydown events for debugging (only when palette is not open)
                 if (window.debugLog) {
                     window.debugLog('event', 'Keydown event', {
                         key: e.key,
@@ -723,6 +830,27 @@
                 }
                 
                 const selectedId = gantt.getSelectedId();
+                
+                if (window.debugLog) window.debugLog('debug', 'Passed all early return checks, processing key: ' + e.key);
+                
+                // Ctrl+K or Cmd+K - let Ninja Keys handle this
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    // Don't prevent default - let Ninja Keys open
+                    // Set flag that palette is likely opening
+                    setTimeout(() => {
+                        // Check if palette actually opened
+                        const ninja = document.getElementById('commandPalette');
+                        if (ninja) {
+                            const hasVisibleAttr = ninja.hasAttribute('visible');
+                            const hasShadowModal = ninja.shadowRoot && ninja.shadowRoot.querySelector('.modal');
+                            if (hasVisibleAttr || hasShadowModal) {
+                                isCommandPaletteOpen = true;
+                                if (window.debugLog) window.debugLog('debug', 'Command palette confirmed open after Ctrl+K');
+                            }
+                        }
+                    }, 100);
+                    return;
+                }
                 
                 // Ctrl+F or Cmd+F to focus search
                 if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
@@ -749,6 +877,50 @@
                     return;
                 }
                 
+                // Horizontal scrolling with Shift + Arrow keys
+                if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const scrollState = gantt.getScrollState();
+                    const scrollAmount = calculateScrollAmount();
+                    
+                    if (e.key === 'ArrowLeft') {
+                        if (window.debugLog) window.debugLog('debug', 'Shift+Left pressed - scrolling left', {
+                            currentX: scrollState.x,
+                            scrollAmount: scrollAmount
+                        });
+                        gantt.scrollTo(Math.max(0, scrollState.x - scrollAmount), null);
+                        updateStatus('Scrolled left');
+                    } else {
+                        if (window.debugLog) window.debugLog('debug', 'Shift+Right pressed - scrolling right', {
+                            currentX: scrollState.x,
+                            scrollAmount: scrollAmount
+                        });
+                        gantt.scrollTo(scrollState.x + scrollAmount, null);
+                        updateStatus('Scrolled right');
+                    }
+                    return;
+                }
+                
+                // Home/End keys for timeline navigation
+                if (e.key === 'Home') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'Home pressed - scrolling to start');
+                    gantt.scrollTo(0, null);
+                    updateStatus('Scrolled to timeline start');
+                    return;
+                } else if (e.key === 'End') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.debugLog) window.debugLog('debug', 'End pressed - scrolling to end');
+                    // Scroll to the far right (large number, gantt will clamp it)
+                    gantt.scrollTo(999999, null);
+                    updateStatus('Scrolled to timeline end');
+                    return;
+                }
+                
                 // Navigation shortcuts
                 if (e.key === 'ArrowUp') {
                     e.preventDefault();
@@ -765,7 +937,7 @@
                 }
                 
                 // Expand/Collapse shortcuts
-                if (e.key === 'ArrowRight') {
+                if (e.key === 'ArrowRight' && !e.shiftKey) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (selectedId && gantt.hasChild(selectedId)) {
@@ -775,7 +947,7 @@
                         if (window.debugLog) window.debugLog('debug', 'Arrow right pressed - no children or no selection', {task: selectedId, hasChildren: selectedId ? gantt.hasChild(selectedId) : false});
                     }
                     return;
-                } else if (e.key === 'ArrowLeft') {
+                } else if (e.key === 'ArrowLeft' && !e.shiftKey) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (selectedId && gantt.hasChild(selectedId)) {
@@ -875,11 +1047,16 @@
                     }
                     return;
                 }
-            }, true); // Use capture phase to get events before DHTMLX
+            }); // Don't use capture phase - let Ninja Keys get events first
         
         
         // Handle search-specific keys at document level
         document.addEventListener('keydown', function(e) {
+            // Don't handle if command palette is open
+            if (isCommandPaletteOpen) {
+                return;
+            }
+            
             const searchInput = document.getElementById('searchInput');
             const isSearchFocused = document.activeElement === searchInput;
             
@@ -891,61 +1068,6 @@
                 return;
             }
         });
-        
-        // Helper functions for navigation
-        function selectPreviousTask() {
-            const allTasks = gantt.getTaskByTime();
-            // Filter to only visible tasks
-            const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
-            const selectedId = gantt.getSelectedId();
-            
-            if (window.debugLog) {
-                window.debugLog('debug', 'Selecting previous task', {
-                    totalTasks: allTasks.length,
-                    visibleTasks: visibleTasks.length,
-                    currentSelection: selectedId
-                });
-            }
-            
-            if (!selectedId && visibleTasks.length > 0) {
-                gantt.selectTask(visibleTasks[0].id);
-                gantt.showTask(visibleTasks[0].id);
-                return;
-            }
-            
-            let currentIndex = visibleTasks.findIndex(t => t.id === selectedId);
-            if (currentIndex > 0) {
-                gantt.selectTask(visibleTasks[currentIndex - 1].id);
-                gantt.showTask(visibleTasks[currentIndex - 1].id);
-            }
-        }
-        
-        function selectNextTask() {
-            const allTasks = gantt.getTaskByTime();
-            // Filter to only visible tasks
-            const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
-            const selectedId = gantt.getSelectedId();
-            
-            if (window.debugLog) {
-                window.debugLog('debug', 'Selecting next task', {
-                    totalTasks: allTasks.length,
-                    visibleTasks: visibleTasks.length,
-                    currentSelection: selectedId
-                });
-            }
-            
-            if (!selectedId && visibleTasks.length > 0) {
-                gantt.selectTask(visibleTasks[0].id);
-                gantt.showTask(visibleTasks[0].id);
-                return;
-            }
-            
-            let currentIndex = visibleTasks.findIndex(t => t.id === selectedId);
-            if (currentIndex < visibleTasks.length - 1) {
-                gantt.selectTask(visibleTasks[currentIndex + 1].id);
-                gantt.showTask(visibleTasks[currentIndex + 1].id);
-            }
-        }
         
         // Future date filtering functions (to be implemented)
         /*
@@ -966,8 +1088,406 @@
         }
         */
         
+        // Navigation functions
+        function selectNextTask() {
+            const allTasks = gantt.getTaskByTime();
+            const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
+            const currentId = gantt.getSelectedId();
+            
+            if (window.debugLog) {
+                window.debugLog('debug', 'Selecting next task', {
+                    totalTasks: allTasks.length,
+                    visibleTasks: visibleTasks.length,
+                    currentSelection: currentId
+                });
+            }
+            
+            if (!currentId || visibleTasks.length === 0) {
+                if (visibleTasks.length > 0) {
+                    gantt.selectTask(visibleTasks[0].id);
+                }
+                return;
+            }
+            
+            const currentIndex = visibleTasks.findIndex(task => task.id === currentId);
+            if (currentIndex !== -1 && currentIndex < visibleTasks.length - 1) {
+                gantt.selectTask(visibleTasks[currentIndex + 1].id);
+            }
+        }
+        
+        function selectPreviousTask() {
+            const allTasks = gantt.getTaskByTime();
+            const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
+            const currentId = gantt.getSelectedId();
+            
+            if (window.debugLog) {
+                window.debugLog('debug', 'Selecting previous task', {
+                    totalTasks: allTasks.length,
+                    visibleTasks: visibleTasks.length,
+                    currentSelection: currentId
+                });
+            }
+            
+            if (!currentId || visibleTasks.length === 0) {
+                if (visibleTasks.length > 0) {
+                    gantt.selectTask(visibleTasks[visibleTasks.length - 1].id);
+                }
+                return;
+            }
+            
+            const currentIndex = visibleTasks.findIndex(task => task.id === currentId);
+            if (currentIndex > 0) {
+                gantt.selectTask(visibleTasks[currentIndex - 1].id);
+            }
+        }
+        
         // Load initial data
         loadTaskJugglerData();
+        
+        // Initialize command palette
+        function initializeCommandPalette() {
+            const ninja = document.getElementById('commandPalette');
+            if (!ninja) {
+                console.error('Command palette element not found');
+                return;
+            }
+            
+            // Use MutationObserver to track when ninja-keys opens/closes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'visible') {
+                        const isVisible = ninja.hasAttribute('visible');
+                        isCommandPaletteOpen = isVisible;
+                        if (window.debugLog) {
+                            window.debugLog('debug', `Command palette ${isVisible ? 'opened' : 'closed'} (visible attribute changed)`);
+                        }
+                    }
+                });
+            });
+            
+            // Start observing the ninja element for attribute changes
+            observer.observe(ninja, { attributes: true });
+            
+            // Define available commands
+            const commands = [
+                {
+                    id: 'filter-overdue',
+                    title: 'Filter: Overdue tasks',
+                    section: 'Filters',
+                    keywords: 'overdue late past due',
+                    icon: '⏰',
+                    handler: () => {
+                        filterOverdueTasks();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'filter-today',
+                    title: 'Filter: Tasks active today',
+                    section: 'Filters',
+                    keywords: 'today current now',
+                    icon: '📅',
+                    handler: () => {
+                        filterTodayTasks();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'filter-week',
+                    title: 'Filter: Tasks this week',
+                    section: 'Filters',
+                    keywords: 'week 7 days',
+                    icon: '📆',
+                    handler: () => {
+                        filterWeekTasks();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'filter-completed',
+                    title: 'Filter: Completed tasks',
+                    section: 'Filters',
+                    keywords: 'done finished complete 100%',
+                    icon: '✅',
+                    handler: () => {
+                        filterCompletedTasks();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'filter-in-progress',
+                    title: 'Filter: In progress tasks',
+                    section: 'Filters',
+                    keywords: 'progress active working',
+                    icon: '🔄',
+                    handler: () => {
+                        filterInProgressTasks();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'clear-filters',
+                    title: 'Clear all filters',
+                    section: 'Filters',
+                    keywords: 'clear reset remove filters all',
+                    icon: '🧹',
+                    handler: () => {
+                        clearAllFilters();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'zoom-day',
+                    title: 'Zoom: Day view',
+                    section: 'View',
+                    keywords: 'zoom day daily',
+                    icon: '🔍',
+                    handler: () => {
+                        setZoom('day');
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'zoom-week',
+                    title: 'Zoom: Week view',
+                    section: 'View',
+                    keywords: 'zoom week weekly',
+                    icon: '🔍',
+                    handler: () => {
+                        setZoom('week');
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'zoom-month',
+                    title: 'Zoom: Month view',
+                    section: 'View',
+                    keywords: 'zoom month monthly',
+                    icon: '🔍',
+                    handler: () => {
+                        setZoom('month');
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'expand-all',
+                    title: 'Expand all tasks',
+                    section: 'View',
+                    keywords: 'expand open all show',
+                    icon: '📂',
+                    handler: () => {
+                        expandAll();
+                        return { mode: 'closed' };
+                    }
+                },
+                {
+                    id: 'collapse-all',
+                    title: 'Collapse all tasks',
+                    section: 'View',
+                    keywords: 'collapse close all hide',
+                    icon: '📁',
+                    handler: () => {
+                        collapseAll();
+                        return { mode: 'closed' };
+                    }
+                }
+            ];
+            
+            // Set the commands
+            ninja.data = commands;
+            
+            // Configure hotkeys
+            ninja.setAttribute('hotkeys', 'ctrl+k,cmd+k');
+            
+            // Try to intercept when the palette opens/closes
+            // Check if ninja-keys exposes an 'opened' property or method
+            Object.defineProperty(ninja, 'visible', {
+                get() {
+                    return this.hasAttribute('visible');
+                },
+                set(value) {
+                    if (value) {
+                        this.setAttribute('visible', '');
+                        isCommandPaletteOpen = true;
+                        if (window.debugLog) window.debugLog('debug', 'Command palette opened via visible property');
+                    } else {
+                        this.removeAttribute('visible');
+                        isCommandPaletteOpen = false;
+                        if (window.debugLog) window.debugLog('debug', 'Command palette closed via visible property');
+                    }
+                }
+            });
+            
+            // Add some custom styling
+            const style = document.createElement('style');
+            style.textContent = `
+                ninja-keys {
+                    --ninja-width: 640px;
+                    --ninja-backdrop-filter: blur(10px);
+                    --ninja-overflow-background: rgba(255, 255, 255, 0.5);
+                    --ninja-text-color: #333;
+                    --ninja-font-size: 14px;
+                    --ninja-top: 20%;
+                    --ninja-selected-background: #007bff;
+                    --ninja-secondary-text-color: #666;
+                    --ninja-modal-background: #fff;
+                    --ninja-modal-shadow: 0 16px 48px rgba(0,0,0,0.15);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Filter functions
+        function filterOverdueTasks() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const allTasks = gantt.getTaskByTime();
+            const overdueTasks = allTasks.filter(task => {
+                const endDate = new Date(task.end_date);
+                return endDate < today && task.progress < 1;
+            });
+            
+            applyTaskFilter(overdueTasks, 'Showing overdue tasks');
+        }
+        
+        function filterTodayTasks() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const allTasks = gantt.getTaskByTime();
+            const todayTasks = allTasks.filter(task => {
+                const start = new Date(task.start_date);
+                const end = new Date(task.end_date);
+                return start <= tomorrow && end >= today;
+            });
+            
+            applyTaskFilter(todayTasks, 'Showing tasks active today');
+        }
+        
+        function filterWeekTasks() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const weekEnd = new Date(today);
+            weekEnd.setDate(weekEnd.getDate() + 7);
+            
+            const allTasks = gantt.getTaskByTime();
+            const weekTasks = allTasks.filter(task => {
+                const start = new Date(task.start_date);
+                const end = new Date(task.end_date);
+                return (start <= weekEnd && end >= today) || (start >= today && start <= weekEnd);
+            });
+            
+            applyTaskFilter(weekTasks, 'Showing tasks for this week');
+        }
+        
+        function filterCompletedTasks() {
+            const allTasks = gantt.getTaskByTime();
+            const completedTasks = allTasks.filter(task => task.progress >= 1);
+            
+            applyTaskFilter(completedTasks, 'Showing completed tasks');
+        }
+        
+        function filterInProgressTasks() {
+            const allTasks = gantt.getTaskByTime();
+            const inProgressTasks = allTasks.filter(task => task.progress > 0 && task.progress < 1);
+            
+            applyTaskFilter(inProgressTasks, 'Showing in-progress tasks');
+        }
+        
+        function applyTaskFilter(filteredTasks, message) {
+            // Save original data if not already saved
+            if (!window.originalGanttData) {
+                window.originalGanttData = gantt.serialize();
+            }
+            
+            // Get all task IDs that should be shown (including parents)
+            const tasksToShow = new Set();
+            
+            filteredTasks.forEach(task => {
+                // Add the task itself
+                tasksToShow.add(task.id);
+                
+                // Add all parent tasks
+                let parentId = task.parent;
+                while (parentId && parentId !== 0) {
+                    tasksToShow.add(parentId);
+                    const parent = gantt.getTask(parentId);
+                    if (parent) {
+                        parentId = parent.parent;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Add all children of filtered tasks
+                addAllChildren(task.id, tasksToShow);
+            });
+            
+            // Create filtered data
+            const allTasks = window.originalGanttData.data;
+            const filteredData = {
+                data: allTasks.filter(task => tasksToShow.has(task.id)),
+                links: window.originalGanttData.links
+            };
+            
+            // Apply filter
+            gantt.clearAll();
+            gantt.parse(filteredData);
+            
+            // Expand filtered parent tasks
+            filteredData.data.forEach(task => {
+                if (task.type === gantt.config.types.project || gantt.hasChild(task.id)) {
+                    gantt.open(task.id);
+                }
+            });
+            
+            updateStatus(message + ` (${filteredTasks.length} tasks)`);
+            
+            // Show active filter indicator
+            const filterDiv = document.getElementById('activeFilters');
+            const filterDesc = document.getElementById('filterDescription');
+            filterDiv.style.display = 'block';
+            filterDesc.textContent = message;
+        }
+        
+        function addAllChildren(parentId, includeSet) {
+            gantt.eachTask(function(child) {
+                includeSet.add(child.id);
+                if (gantt.hasChild(child.id)) {
+                    addAllChildren(child.id, includeSet);
+                }
+            }, parentId);
+        }
+        
+        function clearAllFilters() {
+            if (window.originalGanttData) {
+                gantt.clearAll();
+                gantt.parse(window.originalGanttData);
+                updateStatus('All filters cleared');
+                
+                // Hide active filter indicator
+                const filterDiv = document.getElementById('activeFilters');
+                filterDiv.style.display = 'none';
+            } else {
+                updateStatus('No filters to clear');
+            }
+        }
+        
+        // Initialize command palette after DOM is ready and custom elements are defined
+        setTimeout(() => {
+            // Wait for ninja-keys to be defined as a custom element
+            customElements.whenDefined('ninja-keys').then(() => {
+                if (window.debugLog) window.debugLog('debug', 'ninja-keys custom element defined, initializing');
+                initializeCommandPalette();
+            }).catch(err => {
+                console.error('Error waiting for ninja-keys:', err);
+                // Try to initialize anyway
+                initializeCommandPalette();
+            });
+        }, 100);
     </script>
 </body>
 </html>
