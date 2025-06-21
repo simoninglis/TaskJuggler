@@ -7,6 +7,8 @@ let currentZoom = "day";
 let originalData = null;
 let searchTimeout = null;
 let isFiltered = false;
+let focusedTaskId = null;
+let focusedTaskName = null;
 
 // Expose currentZoom for testing
 window.currentZoom = currentZoom;
@@ -517,5 +519,150 @@ function clearAllFilters() {
         }
     } else {
         updateStatus('No filters to clear');
+    }
+}
+
+// Focus Mode Functions
+function focusOnTask(taskId) {
+    if (!taskId) return;
+    
+    // Save original data if not already saved
+    if (!window.originalGanttData) {
+        window.originalGanttData = gantt.serialize();
+    }
+    
+    const task = gantt.getTask(taskId);
+    if (!task) {
+        updateStatus('Task not found');
+        return;
+    }
+    
+    // Store focus information
+    focusedTaskId = taskId;
+    focusedTaskName = task.text;
+    
+    // Get all tasks to include in focused view
+    const tasksToShow = new Set();
+    
+    // Add the focused task
+    tasksToShow.add(taskId);
+    
+    // Add all descendants
+    addAllDescendants(taskId, tasksToShow);
+    
+    // Add all ancestors up to root
+    let parentId = task.parent;
+    while (parentId && parentId !== 0) {
+        tasksToShow.add(parentId);
+        const parent = gantt.getTask(parentId);
+        if (parent) {
+            parentId = parent.parent;
+        } else {
+            break;
+        }
+    }
+    
+    // Create filtered data
+    const allTasks = window.originalGanttData.data;
+    const filteredData = {
+        data: allTasks.filter(task => tasksToShow.has(task.id)),
+        links: window.originalGanttData.links
+    };
+    
+    // Apply focus filter
+    gantt.clearAll();
+    gantt.parse(filteredData);
+    
+    // Expand all tasks in the focused view
+    gantt.eachTask(function(task) {
+        if (gantt.hasChild(task.id)) {
+            gantt.open(task.id);
+        }
+    });
+    
+    // Select the focused task
+    gantt.selectTask(taskId);
+    gantt.showTask(taskId);
+    
+    updateStatus(`Focused on: ${focusedTaskName}`);
+    showFocusIndicator();
+}
+
+function focusOnCurrentTask() {
+    const selectedId = gantt.getSelectedId();
+    if (!selectedId) {
+        updateStatus('No task selected');
+        return;
+    }
+    
+    focusOnTask(selectedId);
+}
+
+function expandFocus() {
+    if (!focusedTaskId) {
+        updateStatus('No focus active');
+        return;
+    }
+    
+    const task = gantt.getTask(focusedTaskId);
+    if (task && task.parent && task.parent !== 0) {
+        focusOnTask(task.parent);
+    } else {
+        updateStatus('Already at top level');
+    }
+}
+
+function exitFocusMode() {
+    if (!focusedTaskId) {
+        updateStatus('Not in focus mode');
+        return;
+    }
+    
+    // Clear focus state
+    focusedTaskId = null;
+    focusedTaskName = null;
+    
+    // Restore original data
+    if (window.originalGanttData) {
+        gantt.clearAll();
+        gantt.parse(window.originalGanttData);
+        updateStatus('Focus mode exited');
+        hideFocusIndicator();
+    }
+}
+
+function addAllDescendants(parentId, includeSet) {
+    gantt.eachTask(function(child) {
+        includeSet.add(child.id);
+        if (gantt.hasChild(child.id)) {
+            addAllDescendants(child.id, includeSet);
+        }
+    }, parentId);
+}
+
+function showFocusIndicator() {
+    // Update the active filter div to show focus mode
+    const filterDiv = document.getElementById('activeFilters');
+    const filterDesc = document.getElementById('filterDescription');
+    
+    if (filterDiv && filterDesc) {
+        filterDiv.style.display = 'block';
+        filterDiv.style.background = '#e8f5e9'; // Light green for focus mode
+        filterDesc.innerHTML = `<strong>Focus Mode:</strong> ${focusedTaskName}`;
+        
+        // Update the clear button to exit focus
+        const clearButton = filterDiv.querySelector('button');
+        if (clearButton) {
+            clearButton.textContent = 'Exit Focus';
+            clearButton.onclick = exitFocusMode;
+        }
+    }
+}
+
+function hideFocusIndicator() {
+    const filterDiv = document.getElementById('activeFilters');
+    if (filterDiv) {
+        filterDiv.style.display = 'none';
+        filterDiv.style.background = '#e3f2fd'; // Reset to original color
     }
 }

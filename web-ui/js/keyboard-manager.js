@@ -350,56 +350,57 @@ class KeyboardManager {
             return 'handled'; // Prevent routing to other handlers
         });
         
-        // Ctrl+F / Cmd+F - Focus search (works from gantt or palette states)
-        this.registerGlobalHotkey('ctrl+f', (e, currentState) => {
-            if (currentState === this.States.SEARCH_FOCUSED) {
-                return 'continue'; // Already focused
+        // '/' key - Open search in command palette
+        this.registerGlobalHotkey('/', (e, currentState) => {
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
+                return 'continue'; // Let palette handle it
             }
             
-            this.debug('Global Ctrl+F pressed - focusing search');
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.focus();
-                searchInput.select();
-                return 'handled';
+            this.debug('Global / pressed - opening search palette');
+            if (window.customCommandPalette) {
+                window.customCommandPalette.openSearch();
+                this.debug('Opened custom command palette in search mode');
+                this.updateState();
             }
-            return 'continue';
+            
+            return 'handled';
         });
         
-        this.registerGlobalHotkey('cmd+f', (e, currentState) => {
-            if (currentState === this.States.SEARCH_FOCUSED) {
-                return 'continue';
+        // 'F' key - Open focus search
+        this.registerGlobalHotkey('f', (e, currentState) => {
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
+                return 'continue'; // Let palette handle it
             }
             
-            this.debug('Global Cmd+F pressed - focusing search');
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.focus();
-                searchInput.select();
-                return 'handled';
+            this.debug('Global F pressed - opening focus search');
+            if (window.customCommandPalette) {
+                window.customCommandPalette.openFocusSearch();
+                this.debug('Opened custom command palette in focus search mode');
+                this.updateState();
             }
-            return 'continue';
+            
+            return 'handled';
+        });
+        
+        // 'Shift+F' - Focus on current selection
+        this.registerGlobalHotkey('shift+f', (e, currentState) => {
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
+                return 'continue'; // Let palette handle it
+            }
+            
+            this.debug('Global Shift+F pressed - focusing on current task');
+            if (typeof focusOnCurrentTask === 'function') {
+                focusOnCurrentTask();
+            }
+            
+            return 'handled';
         });
         
         // Escape key - Context-sensitive escape handling
         this.registerGlobalHotkey('escape', (e, currentState) => {
             this.debug('Global Escape pressed', { currentState });
             
-            if (currentState === this.States.SEARCH_FOCUSED) {
-                // Clear search and return focus to gantt
-                if (typeof clearSearch === 'function') {
-                    clearSearch();
-                }
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.blur();
-                }
-                const ganttContainer = document.getElementById('gantt_here');
-                if (ganttContainer) {
-                    ganttContainer.focus();
-                }
-                return 'handled';
-            } else if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
                 // Close custom palette
                 if (window.customCommandPalette) {
                     window.customCommandPalette.close();

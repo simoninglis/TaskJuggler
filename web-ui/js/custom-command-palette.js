@@ -4,10 +4,13 @@
 class CustomCommandPalette {
     constructor() {
         this.isOpen = false;
+        this.isSearchMode = false;
+        this.isFocusMode = false;
         this.commands = [];
         this.filteredCommands = [];
         this.selectedIndex = 0;
         this.elements = {};
+        this.searchResults = [];
         
         // Initialize the palette
         this.initialize();
@@ -83,8 +86,13 @@ class CustomCommandPalette {
         this.elements.resultsContainer.addEventListener('click', (e) => {
             const commandElement = e.target.closest('.command-item');
             if (commandElement) {
-                const commandId = commandElement.dataset.commandId;
-                this.executeCommand(commandId);
+                if (this.isSearchMode) {
+                    const taskId = commandElement.dataset.taskId;
+                    this.selectTask(taskId);
+                } else {
+                    const commandId = commandElement.dataset.commandId;
+                    this.executeCommand(commandId);
+                }
             }
         });
     }
@@ -146,6 +154,51 @@ class CustomCommandPalette {
                 keywords: 'clear reset remove filters all',
                 icon: '🧹',
                 handler: () => clearAllFilters()
+            },
+            
+            // Focus commands
+            {
+                id: 'focus-area',
+                title: 'Focus on area',
+                description: 'Filter to show only a specific task and its subtasks',
+                section: 'Focus',
+                keywords: 'focus area branch isolate concentrate',
+                icon: '🎯',
+                handler: () => {
+                    if (window.customCommandPalette) {
+                        window.customCommandPalette.close();
+                        setTimeout(() => {
+                            window.customCommandPalette.openFocusSearch();
+                        }, 100);
+                    }
+                }
+            },
+            {
+                id: 'focus-selection',
+                title: 'Focus on selection',
+                description: 'Focus on the currently selected task and its subtasks',
+                section: 'Focus',
+                keywords: 'focus current selection selected',
+                icon: '🔍',
+                handler: () => focusOnCurrentTask()
+            },
+            {
+                id: 'expand-focus',
+                title: 'Expand focus',
+                description: 'Include parent level in current focus',
+                section: 'Focus',
+                keywords: 'expand focus parent widen broaden',
+                icon: '🔼',
+                handler: () => expandFocus()
+            },
+            {
+                id: 'exit-focus',
+                title: 'Exit focus mode',
+                description: 'Return to full project view',
+                section: 'Focus',
+                keywords: 'exit focus clear unfocus all',
+                icon: '❌',
+                handler: () => exitFocusMode()
             },
             
             // View commands
@@ -220,6 +273,24 @@ class CustomCommandPalette {
                 keywords: 'collapse close all hide',
                 icon: '📁',
                 handler: () => collapseAll()
+            },
+            {
+                id: 'toggle-grid',
+                title: 'Toggle grid',
+                description: 'Show or hide the grid lines',
+                section: 'View',
+                keywords: 'grid lines toggle show hide',
+                icon: '⚏',
+                handler: () => toggleGrid()
+            },
+            {
+                id: 'export-json',
+                title: 'Export to JSON',
+                description: 'Export project data as JSON file',
+                section: 'File',
+                keywords: 'export json save download',
+                icon: '💾',
+                handler: () => exportData()
             }
         ];
         
@@ -230,17 +301,43 @@ class CustomCommandPalette {
     handleSearch(query) {
         const searchTerm = query.toLowerCase().trim();
         
-        if (!searchTerm) {
-            this.filteredCommands = [...this.commands];
+        if (this.isSearchMode) {
+            // Handle task search
+            this.performTaskSearch(searchTerm);
         } else {
-            this.filteredCommands = this.commands.filter(command => {
-                const searchText = `${command.title} ${command.description} ${command.keywords}`.toLowerCase();
-                return searchText.includes(searchTerm);
-            });
+            // Handle command search
+            if (!searchTerm) {
+                this.filteredCommands = [...this.commands];
+            } else {
+                this.filteredCommands = this.commands.filter(command => {
+                    const searchText = `${command.title} ${command.description} ${command.keywords}`.toLowerCase();
+                    return searchText.includes(searchTerm);
+                });
+            }
+            
+            this.selectedIndex = 0;
+            this.renderResults();
+        }
+    }
+    
+    performTaskSearch(searchTerm) {
+        if (!searchTerm) {
+            this.searchResults = [];
+            this.renderSearchMode();
+            return;
         }
         
+        // Get all tasks from gantt
+        const allTasks = gantt.getTaskByTime();
+        
+        // Filter tasks by search term
+        this.searchResults = allTasks.filter(task => {
+            const taskText = task.text.toLowerCase();
+            return taskText.includes(searchTerm);
+        });
+        
         this.selectedIndex = 0;
-        this.renderResults();
+        this.renderSearchResults();
     }
     
     handleKeyDown(e) {
@@ -268,18 +365,28 @@ class CustomCommandPalette {
     }
     
     selectNext() {
-        if (this.filteredCommands.length === 0) return;
-        
-        this.selectedIndex = (this.selectedIndex + 1) % this.filteredCommands.length;
+        if (this.isSearchMode) {
+            if (this.searchResults.length === 0) return;
+            this.selectedIndex = (this.selectedIndex + 1) % this.searchResults.length;
+        } else {
+            if (this.filteredCommands.length === 0) return;
+            this.selectedIndex = (this.selectedIndex + 1) % this.filteredCommands.length;
+        }
         this.updateSelection();
     }
     
     selectPrevious() {
-        if (this.filteredCommands.length === 0) return;
-        
-        this.selectedIndex = this.selectedIndex === 0 
-            ? this.filteredCommands.length - 1 
-            : this.selectedIndex - 1;
+        if (this.isSearchMode) {
+            if (this.searchResults.length === 0) return;
+            this.selectedIndex = this.selectedIndex === 0 
+                ? this.searchResults.length - 1 
+                : this.selectedIndex - 1;
+        } else {
+            if (this.filteredCommands.length === 0) return;
+            this.selectedIndex = this.selectedIndex === 0 
+                ? this.filteredCommands.length - 1 
+                : this.selectedIndex - 1;
+        }
         this.updateSelection();
     }
     
@@ -297,10 +404,15 @@ class CustomCommandPalette {
     }
     
     executeSelected() {
-        if (this.filteredCommands.length === 0 || this.selectedIndex < 0) return;
-        
-        const selectedCommand = this.filteredCommands[this.selectedIndex];
-        this.executeCommand(selectedCommand.id);
+        if (this.isSearchMode) {
+            if (this.searchResults.length === 0 || this.selectedIndex < 0) return;
+            const selectedTask = this.searchResults[this.selectedIndex];
+            this.selectTask(selectedTask.id);
+        } else {
+            if (this.filteredCommands.length === 0 || this.selectedIndex < 0) return;
+            const selectedCommand = this.filteredCommands[this.selectedIndex];
+            this.executeCommand(selectedCommand.id);
+        }
     }
     
     executeCommand(commandId) {
@@ -326,6 +438,43 @@ class CustomCommandPalette {
             }
         } catch (error) {
             console.error('Error executing command:', error);
+            if (typeof updateStatus === 'function') {
+                updateStatus(`Error: ${error.message}`);
+            }
+        }
+    }
+    
+    selectTask(taskId) {
+        if (!taskId) return;
+        
+        try {
+            if (this.isFocusMode) {
+                // Focus mode - filter to show only this task and its subtasks
+                if (typeof focusOnTask === 'function') {
+                    focusOnTask(taskId);
+                }
+                // Close the palette
+                this.close();
+                
+                if (typeof updateStatus === 'function') {
+                    const task = gantt.getTask(taskId);
+                    updateStatus(`Focused on: ${task.text}`);
+                }
+            } else {
+                // Regular search mode - just select and show the task
+                gantt.selectTask(taskId);
+                gantt.showTask(taskId);
+                
+                // Close the palette
+                this.close();
+                
+                if (typeof updateStatus === 'function') {
+                    const task = gantt.getTask(taskId);
+                    updateStatus(`Selected: ${task.text}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error selecting task:', error);
             if (typeof updateStatus === 'function') {
                 updateStatus(`Error: ${error.message}`);
             }
@@ -387,7 +536,11 @@ class CustomCommandPalette {
         if (this.isOpen) return;
         
         this.isOpen = true;
+        this.isSearchMode = false;
         this.elements.overlay.style.display = 'flex';
+        
+        // Set placeholder for command mode
+        this.elements.searchInput.placeholder = 'Type a command...';
         
         // Clear search and reset
         this.elements.searchInput.value = '';
@@ -407,10 +560,146 @@ class CustomCommandPalette {
         }
     }
     
+    openSearch() {
+        if (this.isOpen) return;
+        
+        this.isOpen = true;
+        this.isSearchMode = true;
+        this.isFocusMode = false;
+        this.elements.overlay.style.display = 'flex';
+        
+        // Set placeholder for search mode
+        this.elements.searchInput.placeholder = 'Search tasks...';
+        
+        // Clear search and reset
+        this.elements.searchInput.value = '';
+        this.searchResults = [];
+        this.selectedIndex = 0;
+        
+        // Show search mode UI
+        this.renderSearchMode();
+        
+        // Focus the search input after a brief delay to ensure visibility
+        setTimeout(() => {
+            this.elements.searchInput.focus();
+        }, 10);
+        
+        if (window.debugLog) {
+            window.debugLog('info', 'Custom command palette opened in search mode');
+        }
+    }
+    
+    openFocusSearch() {
+        if (this.isOpen) return;
+        
+        this.isOpen = true;
+        this.isSearchMode = true;
+        this.isFocusMode = true;
+        this.elements.overlay.style.display = 'flex';
+        
+        // Set placeholder for focus mode
+        this.elements.searchInput.placeholder = 'Search for area to focus on...';
+        
+        // Clear search and reset
+        this.elements.searchInput.value = '';
+        this.searchResults = [];
+        this.selectedIndex = 0;
+        
+        // Show focus search mode UI
+        this.renderFocusSearchMode();
+        
+        // Focus the search input after a brief delay to ensure visibility
+        setTimeout(() => {
+            this.elements.searchInput.focus();
+        }, 10);
+        
+        if (window.debugLog) {
+            window.debugLog('info', 'Custom command palette opened in focus search mode');
+        }
+    }
+    
+    renderSearchMode() {
+        const container = this.elements.resultsContainer;
+        container.innerHTML = '';
+        
+        if (this.searchResults.length === 0) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'search-placeholder';
+            placeholder.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #666;">
+                    <div style="font-size: 16px; margin-bottom: 8px;">Search for tasks</div>
+                    <div style="font-size: 14px; opacity: 0.8;">Type to search through all tasks in the project</div>
+                </div>
+            `;
+            container.appendChild(placeholder);
+        }
+    }
+    
+    renderFocusSearchMode() {
+        const container = this.elements.resultsContainer;
+        container.innerHTML = '';
+        
+        const placeholder = document.createElement('div');
+        placeholder.className = 'search-placeholder';
+        placeholder.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #666;">
+                <div style="font-size: 16px; margin-bottom: 8px;">Search for area to focus on</div>
+                <div style="font-size: 14px; opacity: 0.8;">Type to find a parent task. Selecting it will show only that task and its subtasks.</div>
+            </div>
+        `;
+        container.appendChild(placeholder);
+    }
+    
+    renderSearchResults() {
+        const container = this.elements.resultsContainer;
+        container.innerHTML = '';
+        
+        if (this.searchResults.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'no-results';
+            noResults.textContent = 'No tasks found';
+            container.appendChild(noResults);
+            return;
+        }
+        
+        // Render search results
+        this.searchResults.forEach((task, index) => {
+            const taskElement = document.createElement('div');
+            taskElement.className = 'command-item';
+            taskElement.dataset.taskId = task.id;
+            
+            if (index === this.selectedIndex) {
+                taskElement.classList.add('selected');
+            }
+            
+            // Format dates
+            const startDate = new Date(task.start_date).toLocaleDateString();
+            const endDate = new Date(task.end_date).toLocaleDateString();
+            
+            taskElement.innerHTML = `
+                <div class="command-icon">📋</div>
+                <div class="command-content">
+                    <div class="command-title">${this.highlightMatch(task.text, this.elements.searchInput.value)}</div>
+                    <div class="command-description">${startDate} - ${endDate} | Progress: ${Math.round(task.progress * 100)}%</div>
+                </div>
+            `;
+            
+            container.appendChild(taskElement);
+        });
+    }
+    
+    highlightMatch(text, searchTerm) {
+        if (!searchTerm) return text;
+        
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
+    
     close() {
         if (!this.isOpen) return;
         
         this.isOpen = false;
+        this.isSearchMode = false;
         this.elements.overlay.style.display = 'none';
         
         // Return focus to gantt

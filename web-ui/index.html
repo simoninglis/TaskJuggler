@@ -17,11 +17,6 @@
         <p>Modern web interface for TaskJuggler project management with DHTMLX Gantt</p>
         
         <div class="controls">
-            <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Search tasks..." 
-                       onkeyup="handleSearchKeyUp(event)" />
-                <button class="clear-search" onclick="clearSearch()">Clear</button>
-            </div>
             <div class="mode-indicator">
                 <span class="mode-label">Mode:</span>
                 <label class="switch">
@@ -30,21 +25,6 @@
                 </label>
                 <span class="mode-text" id="modeText">View Only</span>
             </div>
-            <button onclick="zoomIn()">Zoom In</button>
-            <button onclick="zoomOut()">Zoom Out</button>
-            <button onclick="toggleGrid()">Toggle Grid</button>
-            <button onclick="exportData()">Export JSON</button>
-            <!-- Date filter placeholder - to be implemented -->
-            <!--
-            <div class="date-filter" style="display: inline-block; margin-left: 15px;">
-                <label>Filter dates:</label>
-                <input type="date" id="startDateFilter" placeholder="Start date">
-                <span> to </span>
-                <input type="date" id="endDateFilter" placeholder="End date">
-                <button onclick="applyDateFilter()">Apply</button>
-                <button onclick="clearDateFilter()">Clear</button>
-            </div>
-            -->
         </div>
     </div>
     
@@ -63,7 +43,9 @@
         <div style="margin-top: 10px; font-size: 12px; color: #666;">
             <strong>Keyboard shortcuts:</strong>
             Ctrl+Shift+P: Command palette | 
-            Ctrl+F: Search | 
+            /: Search tasks | 
+            F: Focus on area | 
+            Shift+F: Focus on selection | 
             ↑/↓: Navigate | 
             ←/→: Collapse/Expand | 
             Shift+←/→: Scroll timeline | 
