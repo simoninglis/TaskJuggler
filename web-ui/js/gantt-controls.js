@@ -186,56 +186,55 @@ function setZoom(zoom) {
     currentZoom = zoom;
     window.currentZoom = zoom;  // Update window property for testing
     
-    // Reset date scale template to default first
-    gantt.templates.date_scale = null;
-    
+    // Configure scales based on zoom level (using new scales configuration)
     switch(zoom) {
         case "hour":
-            gantt.config.scale_unit = "day";
-            gantt.config.date_scale = "%d %M";
-            gantt.config.subscales = [
-                {unit: "hour", step: 1, date: "%H:%i"}
+            gantt.config.scales = [
+                {unit: "day", step: 1, format: "%d %M"},
+                {unit: "hour", step: 1, format: "%H:%i"}
             ];
+            gantt.config.min_column_width = 30;
             break;
         case "day":
-            gantt.config.scale_unit = "day";
-            gantt.config.date_scale = "%d %M";
-            gantt.config.subscales = [];
+            gantt.config.scales = [
+                {unit: "month", step: 1, format: "%F %Y"},
+                {unit: "day", step: 1, format: "%d %M"}
+            ];
+            gantt.config.min_column_width = 60;
             break;
         case "week":
-            gantt.config.scale_unit = "week";
-            gantt.config.date_scale = "Week #%W";
-            gantt.config.subscales = [
-                {unit: "day", step: 1, date: "%d %M"}
+            gantt.config.scales = [
+                {unit: "week", step: 1, format: "Week #%W"},
+                {unit: "day", step: 1, format: "%d"}
             ];
+            gantt.config.min_column_width = 60;
             break;
         case "month":
-            gantt.config.scale_unit = "month";
-            gantt.config.date_scale = "%F %Y";
-            gantt.config.subscales = [
-                {unit: "week", step: 1, date: "#%W"}
+            gantt.config.scales = [
+                {unit: "month", step: 1, format: "%F %Y"},
+                {unit: "week", step: 1, format: "#%W"}
             ];
+            gantt.config.min_column_width = 120;
             break;
         case "quarter":
-            gantt.config.scale_unit = "quarter";
-            // Custom template for quarter display
-            gantt.templates.date_scale = function(date) {
-                const quarter = Math.floor(date.getMonth() / 3) + 1;
-                return "Q" + quarter + " " + date.getFullYear();
-            };
-            gantt.config.subscales = [
-                {unit: "month", step: 1, date: "%M"}
+            gantt.config.scales = [
+                {unit: "quarter", step: 1, format: function(date) {
+                    const quarter = Math.floor(date.getMonth() / 3) + 1;
+                    return "Q" + quarter + " " + date.getFullYear();
+                }},
+                {unit: "month", step: 1, format: "%M"}
             ];
+            gantt.config.min_column_width = 90;
             break;
         case "year":
-            gantt.config.scale_unit = "year";
-            gantt.config.date_scale = "%Y";
-            gantt.config.subscales = [
-                {unit: "quarter", step: 1, date: function(date) {
+            gantt.config.scales = [
+                {unit: "year", step: 1, format: "%Y"},
+                {unit: "quarter", step: 1, format: function(date) {
                     const quarter = Math.floor(date.getMonth() / 3) + 1;
                     return "Q" + quarter;
                 }}
             ];
+            gantt.config.min_column_width = 50;
             break;
     }
     gantt.render();

@@ -25,6 +25,9 @@
                 </label>
                 <span class="mode-text" id="modeText">View Only</span>
             </div>
+            <button onclick="window.keyboardHelp && window.keyboardHelp.toggle()" style="margin-left: 20px; padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Help (?)
+            </button>
         </div>
     </div>
     
@@ -42,17 +45,13 @@
         </div>
         <div style="margin-top: 10px; font-size: 12px; color: #666;">
             <strong>Keyboard shortcuts:</strong>
+            Press <kbd style="padding: 2px 6px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 3px;">?</kbd> for help | 
             Ctrl+Shift+P: Command palette | 
             /: Search tasks | 
             F: Focus on area | 
-            Shift+F: Focus on selection | 
             ↑/↓: Navigate | 
             ←/→: Collapse/Expand | 
-            Shift+←/→: Scroll timeline | 
-            Home/End: Jump to start/end | 
-            Space: Toggle expand | 
-            +/-: Zoom | 
-            Enter: Toggle expand/collapse (parent tasks) or Edit (leaf tasks in edit mode)
+            +/-: Zoom
         </div>
     </div>
 
@@ -66,6 +65,7 @@
     <script src="js/gantt-data.js"></script>
     <script src="js/gantt-controls.js"></script>
     <script src="js/keyboard-manager.js"></script>
+    <script src="js/keyboard-help.js"></script>
     <script src="js/custom-command-palette.js"></script>
     <script src="js/app.js"></script>
 </body>

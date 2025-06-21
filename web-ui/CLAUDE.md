@@ -6,17 +6,17 @@ The user will start the web UI server in a separate tmux session using one of th
 
 **Debug server with WebSocket logging (recommended for debugging):**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && poetry run python serve-with-debug.py
+cd /home/singlis/work/TaskJuggler/web-ui && poetry run python dev/serve-with-debug.py
 ```
 
 **Auto-reload server (recommended for development):**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && python3 serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
+cd /home/singlis/work/TaskJuggler/web-ui && python3 dev/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
 ```
 
 **Standard server:**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && python3 serve.py 2>&1 | tee /tmp/webui-server.log
+cd /home/singlis/work/TaskJuggler/web-ui && python3 dev/serve.py 2>&1 | tee /tmp/webui-server.log
 ```
 
 ## Server Information
@@ -55,14 +55,18 @@ Dependencies:
 ## Keyboard Navigation
 
 The web UI implements custom keyboard navigation:
+- **?**: Show keyboard help screen
 - **Arrow Up/Down**: Navigate between tasks
 - **Arrow Left/Right**: Collapse/expand tasks with children
 - **+/-**: Zoom in/out on the timeline
 - **Ctrl+F**: Focus search box
-- **Ctrl+K**: Open command palette
+- **Ctrl+Shift+P**: Open command palette
+- **/**: Search tasks in command palette
+- **F**: Focus search - zoom to specific area
+- **Shift+F**: Focus on current selection
 - **Space**: Toggle expand/collapse for parent tasks
 - **Enter**: Toggle expand/collapse for parent tasks, or edit leaf tasks (when in edit mode)
-- **Escape**: Clear search (when search is focused) or close command palette
+- **Escape**: Clear search (when search is focused) or close dialogs
 
 ## Known Issues & Solutions
 
@@ -89,6 +93,23 @@ The web UI implements custom keyboard navigation:
 - Web components may use shadow DOM which affects event propagation
 - Use MutationObserver to track attribute changes on custom elements
 - Test both light DOM attributes and shadow DOM state for accurate detection
+
+### Keyboard Shortcut Registration
+- **Browser key reporting**: When pressing Shift+/, browsers report it as key='?' with shiftKey=true
+- **Key combo generation**: The keyboard manager generates combos as "shift+?" not "shift+/"
+- **Solution**: Register hotkeys using the exact string the browser will generate
+- Example: Use `registerGlobalHotkey('shift+?', ...)` not `registerGlobalHotkey('shift+/', ...)`
+
+### DHTMLX Gantt Scale Configuration
+- **Deprecation warning**: `gantt.config.scale_unit` and `gantt.config.date_scale` are deprecated
+- **New format**: Use `gantt.config.scales` array with unit/step/format objects
+- Example:
+  ```javascript
+  gantt.config.scales = [
+    {unit: "month", step: 1, format: "%F %Y"},
+    {unit: "day", step: 1, format: "%d %M"}
+  ];
+  ```
 
 ### Port Already in Use
 ```bash
@@ -172,6 +193,8 @@ cd /home/singlis/work/TaskJuggler/web-ui
 poetry run python test_keyboard_navigation.py
 poetry run python test_command_palette.py
 poetry run python test_simple_navigation.py
+poetry run python test_keyboard_help.py
+poetry run python test_help_palette_interaction.py
 ```
 
 ## Important Notes

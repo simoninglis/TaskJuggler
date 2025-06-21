@@ -14,7 +14,8 @@ class KeyboardManager {
             SEARCH_FOCUSED: 'search_focused', 
             CUSTOM_PALETTE_OPEN: 'custom_palette_open',
             LIGHTBOX_OPEN: 'lightbox_open',
-            EXTERNAL_FOCUSED: 'external_focused'
+            EXTERNAL_FOCUSED: 'external_focused',
+            HELP_OPEN: 'help_open'
         };
         
         // Current application state
@@ -70,6 +71,15 @@ class KeyboardManager {
     // ===================
     
     registerStateDetectors() {
+        // Detect if keyboard help is open
+        this.stateDetectors.set(this.States.HELP_OPEN, () => {
+            if (window.keyboardHelp) {
+                const state = window.keyboardHelp.getState();
+                return state.isOpen;
+            }
+            return false;
+        });
+        
         // Detect if custom command palette is open
         this.stateDetectors.set(this.States.CUSTOM_PALETTE_OPEN, () => {
             if (window.customCommandPalette) {
@@ -116,6 +126,7 @@ class KeyboardManager {
     detectCurrentState() {
         // Check states in priority order
         const stateOrder = [
+            this.States.HELP_OPEN,
             this.States.CUSTOM_PALETTE_OPEN,
             this.States.LIGHTBOX_OPEN,
             this.States.SEARCH_FOCUSED,
@@ -227,6 +238,19 @@ class KeyboardManager {
     startListening() {
         // Single keyboard event listener for the entire application
         document.addEventListener('keydown', (e) => {
+            // Always log to WebSocket for debugging
+            if (window.debugLog) {
+                window.debugLog('event', 'Keydown event', {
+                    key: e.key,
+                    keyCode: e.keyCode,
+                    ctrlKey: e.ctrlKey,
+                    shiftKey: e.shiftKey,
+                    altKey: e.altKey,
+                    metaKey: e.metaKey,
+                    target: e.target.tagName + (e.target.id ? '#' + e.target.id : '')
+                });
+            }
+            
             this.handleKeyboardEvent(e);
         }, false); // Use bubble phase, not capture
         
@@ -245,7 +269,8 @@ class KeyboardManager {
             altKey: e.altKey,
             metaKey: e.metaKey,
             currentState: this.currentState,
-            target: e.target.tagName + (e.target.id ? '#' + e.target.id : '')
+            target: e.target.tagName + (e.target.id ? '#' + e.target.id : ''),
+            keyCombo: this.getKeyCombo(e)
         });
         
         // Check global hotkeys first (work in any state)
@@ -282,6 +307,11 @@ class KeyboardManager {
     processGlobalHotkeys(e) {
         const keyCombo = this.getKeyCombo(e);
         const globalHandler = this.globalHotkeys.get(keyCombo);
+        
+        this.debug(`Checking global hotkey: "${keyCombo}"`, {
+            availableHotkeys: Array.from(this.globalHotkeys.keys()),
+            found: !!globalHandler
+        });
         
         if (globalHandler) {
             this.debug(`Processing global hotkey: ${keyCombo}`);
@@ -322,6 +352,7 @@ class KeyboardManager {
         this.registerHandler(this.States.CUSTOM_PALETTE_OPEN, this.handleCustomPaletteOpen.bind(this));
         this.registerHandler(this.States.LIGHTBOX_OPEN, this.handleLightboxOpen.bind(this));
         this.registerHandler(this.States.EXTERNAL_FOCUSED, this.handleExternalFocused.bind(this));
+        this.registerHandler(this.States.HELP_OPEN, this.handleHelpOpen.bind(this));
     }
     
     registerGlobalHotkeys() {
@@ -396,9 +427,62 @@ class KeyboardManager {
             return 'handled';
         });
         
+        // '?' key - Show keyboard help
+        // Register as 'shift+?' because that's what the browser reports when pressing Shift+/
+        this.registerGlobalHotkey('shift+?', (e, currentState) => {
+            this.debug('Shift+? hotkey triggered', { currentState });
+            
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN || 
+                currentState === this.States.HELP_OPEN) {
+                this.debug('Hotkey blocked - palette or help already open');
+                return 'continue'; // Let palette/help handle it
+            }
+            
+            this.debug('Global ? pressed - toggling keyboard help');
+            if (window.keyboardHelp) {
+                window.keyboardHelp.toggle();
+                this.debug('Toggled keyboard help');
+                this.updateState();
+            } else {
+                this.debug('ERROR: window.keyboardHelp not found!');
+            }
+            
+            return 'handled';
+        });
+        
+        // Also register '?' without shift (some keyboards/browsers handle it differently)
+        this.registerGlobalHotkey('?', (e, currentState) => {
+            this.debug('? hotkey triggered (without shift)', { currentState });
+            
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN || 
+                currentState === this.States.HELP_OPEN) {
+                this.debug('Hotkey blocked - palette or help already open');
+                return 'continue'; // Let palette/help handle it
+            }
+            
+            this.debug('Global ? pressed - toggling keyboard help');
+            if (window.keyboardHelp) {
+                window.keyboardHelp.toggle();
+                this.debug('Toggled keyboard help');
+                this.updateState();
+            } else {
+                this.debug('ERROR: window.keyboardHelp not found!');
+            }
+            
+            return 'handled';
+        });
+        
         // Escape key - Context-sensitive escape handling
         this.registerGlobalHotkey('escape', (e, currentState) => {
             this.debug('Global Escape pressed', { currentState });
+            
+            if (currentState === this.States.HELP_OPEN) {
+                // Close help screen
+                if (window.keyboardHelp) {
+                    window.keyboardHelp.close();
+                }
+                return 'handled';
+            }
             
             if (currentState === this.States.CUSTOM_PALETTE_OPEN) {
                 // Close custom palette
@@ -544,6 +628,14 @@ class KeyboardManager {
         this.debug('Handling external-focused key', { key: e.key });
         
         // Don't interfere with external elements
+        return 'continue';
+    }
+    
+    handleHelpOpen(e, state) {
+        this.debug('Handling help-open key', { key: e.key });
+        
+        // Let the help screen handle its own keyboard events
+        // Escape is handled by global hotkey
         return 'continue';
     }
     
