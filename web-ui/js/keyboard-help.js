@@ -36,6 +36,7 @@ class KeyboardHelp {
                     { keys: '← / →', description: 'Collapse/Expand parent tasks' },
                     { keys: 'Space', description: 'Toggle expand/collapse for parent tasks' },
                     { keys: 'Enter', description: 'Toggle expand (parent) or Edit (leaf in edit mode)' },
+                    { keys: 'g', description: 'Go to... (today, project start/end, milestones, months)' },
                     { keys: 'Home', description: 'Jump to timeline start' },
                     { keys: 'End', description: 'Jump to timeline end' }
                 ]
@@ -54,7 +55,7 @@ class KeyboardHelp {
                 name: 'Search & Commands',
                 icon: '🔎',
                 shortcuts: [
-                    { keys: '/', description: 'Search tasks' },
+                    { keys: '/', description: 'Search tasks or jump to month (e.g., "june", "next month")' },
                     { keys: 'Ctrl/Cmd + Shift + P', description: 'Open command palette' },
                     { keys: 'Esc', description: 'Close dialogs/Clear search' }
                 ]

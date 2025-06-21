@@ -2,6 +2,26 @@
 
 This directory contains a prototype for a modern, interactive Gantt chart interface using DHTMLX Gantt library.
 
+## Design Philosophy
+
+### VIM-Like Keyboard Navigation
+This UI is designed with VIM users in mind, implementing keyboard-first navigation:
+
+- **Modal Interface**: Different modes for viewing, searching, and editing
+- **Single-Key Commands**: Common operations use unmodified keys
+- **Mnemonic Shortcuts**: Keys match action names (F for Focus, / for search)
+- **Minimal Keystrokes**: Optimized for efficiency
+- **Escape to Exit**: Consistent use of Esc to leave modes
+
+Key bindings follow VIM conventions where applicable:
+- `/` - Enter search mode (with month navigation support)
+- `?` - Show help
+- `g` - Go navigation menu (jump to dates, milestones, etc.)
+- `F` - Focus on area (like VIM's fold commands)
+- `+/-` - Zoom in/out
+- `Space` - Toggle (like VIM's fold toggle)
+- Future: `hjkl` for navigation (currently using arrow keys)
+
 ## Structure
 
 - `index.html` - Main HTML file for the Gantt interface
@@ -10,6 +30,16 @@ This directory contains a prototype for a modern, interactive Gantt chart interf
 - `data/` - JSON data files
   - `sample-gantt.json` - Sample data in TaskJuggler JSON format
 - `test-project.tjp` - Sample TaskJuggler project file
+- `dev/` - Development tools and servers
+  - `serve.py` - Basic HTTP server
+  - `serve-with-reload.py` - Auto-reload development server
+  - `serve-with-debug.py` - Debug server with WebSocket logging
+  - `logs/` - Runtime logs
+- `tests/` - Automated test suite
+  - `command_palette/` - Command palette functionality tests
+  - `keyboard/` - Keyboard navigation tests
+  - `integration/` - Integration and UI tests
+- `run_tests.py` - Test runner script
 
 ## Features
 
@@ -37,6 +67,32 @@ This directory contains a prototype for a modern, interactive Gantt chart interf
    ```
 2. Place the generated JSON file in the `data/` directory
 3. Update the fetch URL in `index.html`
+
+### Development Server
+1. Start the development server:
+   ```bash
+   poetry run python dev/serve-with-debug.py  # Recommended for development
+   # OR
+   python dev/serve-with-reload.py            # Auto-reload server
+   # OR  
+   python dev/serve.py                        # Basic server
+   ```
+2. Open http://localhost:8001 in your browser
+3. Check `dev/logs/` for debug information
+
+### Running Tests
+```bash
+# Run all tests
+python run_tests.py all
+
+# Run specific test categories
+python run_tests.py command_palette
+python run_tests.py keyboard
+python run_tests.py integration
+
+# Run individual test
+poetry run python tests/command_palette/test_command_palette.py
+```
 
 ## Current Status
 

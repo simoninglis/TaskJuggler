@@ -6,11 +6,13 @@ class CustomCommandPalette {
         this.isOpen = false;
         this.isSearchMode = false;
         this.isFocusMode = false;
+        this.isGoMode = false;
         this.commands = [];
         this.filteredCommands = [];
         this.selectedIndex = 0;
         this.elements = {};
         this.searchResults = [];
+        this.goOptions = [];
         
         // Initialize the palette
         this.initialize();
@@ -304,6 +306,19 @@ class CustomCommandPalette {
         if (this.isSearchMode) {
             // Handle task search
             this.performTaskSearch(searchTerm);
+        } else if (this.isGoMode) {
+            // Handle go navigation search
+            if (!searchTerm) {
+                this.filteredCommands = [...this.goOptions];
+            } else {
+                this.filteredCommands = this.goOptions.filter(option => {
+                    const searchText = `${option.title} ${option.description}`.toLowerCase();
+                    return searchText.includes(searchTerm);
+                });
+            }
+            
+            this.selectedIndex = 0;
+            this.renderGoMode();
         } else {
             // Handle command search
             if (!searchTerm) {
@@ -327,17 +342,118 @@ class CustomCommandPalette {
             return;
         }
         
-        // Get all tasks from gantt
-        const allTasks = gantt.getTaskByTime();
-        
-        // Filter tasks by search term
-        this.searchResults = allTasks.filter(task => {
-            const taskText = task.text.toLowerCase();
-            return taskText.includes(searchTerm);
-        });
+        // Check if search term is a month
+        const monthMatch = this.parseMonthSearch(searchTerm);
+        if (monthMatch) {
+            this.searchResults = [{
+                id: 'month-jump',
+                text: `Go to ${monthMatch.displayName}`,
+                type: 'month',
+                monthData: monthMatch,
+                icon: '📅'
+            }];
+            
+            // Also search for tasks
+            const allTasks = gantt.getTaskByTime();
+            const taskResults = allTasks.filter(task => {
+                const taskText = task.text.toLowerCase();
+                return taskText.includes(searchTerm);
+            });
+            
+            // Add task results after month result
+            this.searchResults = this.searchResults.concat(taskResults);
+        } else {
+            // Get all tasks from gantt
+            const allTasks = gantt.getTaskByTime();
+            
+            // Filter tasks by search term
+            this.searchResults = allTasks.filter(task => {
+                const taskText = task.text.toLowerCase();
+                return taskText.includes(searchTerm);
+            });
+        }
         
         this.selectedIndex = 0;
         this.renderSearchResults();
+    }
+    
+    parseMonthSearch(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        
+        // Month names and abbreviations
+        const months = {
+            'january': 0, 'jan': 0,
+            'february': 1, 'feb': 1,
+            'march': 2, 'mar': 2,
+            'april': 3, 'apr': 3,
+            'may': 4,
+            'june': 5, 'jun': 5,
+            'july': 6, 'jul': 6,
+            'august': 7, 'aug': 7,
+            'september': 8, 'sep': 8, 'sept': 8,
+            'october': 9, 'oct': 9,
+            'november': 10, 'nov': 10,
+            'december': 11, 'dec': 11
+        };
+        
+        // Check for month name
+        for (const [monthName, monthIndex] of Object.entries(months)) {
+            if (term.includes(monthName)) {
+                const now = new Date();
+                let year = now.getFullYear();
+                
+                // Check if year is specified (e.g., "june 2025")
+                const yearMatch = term.match(/\d{4}/);
+                if (yearMatch) {
+                    year = parseInt(yearMatch[0]);
+                }
+                
+                // If month is in the past this year, assume next year
+                if (monthIndex < now.getMonth() && !yearMatch) {
+                    year++;
+                }
+                
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                  'July', 'August', 'September', 'October', 'November', 'December'];
+                
+                return {
+                    month: monthIndex,
+                    year: year,
+                    displayName: `${monthNames[monthIndex]} ${year}`,
+                    date: new Date(year, monthIndex, 1)
+                };
+            }
+        }
+        
+        // Check for "next month" or "current month"
+        if (term === 'next month' || term === 'next') {
+            const now = new Date();
+            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            return {
+                month: nextMonth.getMonth(),
+                year: nextMonth.getFullYear(),
+                displayName: `${monthNames[nextMonth.getMonth()]} ${nextMonth.getFullYear()}`,
+                date: nextMonth
+            };
+        }
+        
+        if (term === 'current month' || term === 'current' || term === 'this month' || term === 'now') {
+            const now = new Date();
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            return {
+                month: now.getMonth(),
+                year: now.getFullYear(),
+                displayName: `${monthNames[now.getMonth()]} ${now.getFullYear()}`,
+                date: new Date(now.getFullYear(), now.getMonth(), 1)
+            };
+        }
+        
+        return null;
     }
     
     handleKeyDown(e) {
@@ -408,6 +524,10 @@ class CustomCommandPalette {
             if (this.searchResults.length === 0 || this.selectedIndex < 0) return;
             const selectedTask = this.searchResults[this.selectedIndex];
             this.selectTask(selectedTask.id);
+        } else if (this.isGoMode) {
+            if (this.filteredCommands.length === 0 || this.selectedIndex < 0) return;
+            const selectedCommand = this.filteredCommands[this.selectedIndex];
+            this.executeCommand(selectedCommand.id);
         } else {
             if (this.filteredCommands.length === 0 || this.selectedIndex < 0) return;
             const selectedCommand = this.filteredCommands[this.selectedIndex];
@@ -416,7 +536,14 @@ class CustomCommandPalette {
     }
     
     executeCommand(commandId) {
-        const command = this.commands.find(cmd => cmd.id === commandId);
+        // Check if we're in go mode
+        let command;
+        if (this.isGoMode) {
+            command = this.goOptions.find(cmd => cmd.id === commandId);
+        } else {
+            command = this.commands.find(cmd => cmd.id === commandId);
+        }
+        
         if (!command) {
             console.error('Command not found:', commandId);
             return;
@@ -448,6 +575,25 @@ class CustomCommandPalette {
         if (!taskId) return;
         
         try {
+            // Handle month navigation
+            if (taskId === 'month-jump') {
+                const monthResult = this.searchResults.find(r => r.id === 'month-jump');
+                if (monthResult && monthResult.monthData) {
+                    const targetDate = monthResult.monthData.date;
+                    
+                    // Scroll to the target date
+                    gantt.showDate(targetDate);
+                    
+                    // Close the palette
+                    this.close();
+                    
+                    if (typeof updateStatus === 'function') {
+                        updateStatus(`Jumped to ${monthResult.monthData.displayName}`);
+                    }
+                }
+                return;
+            }
+            
             if (this.isFocusMode) {
                 // Focus mode - filter to show only this task and its subtasks
                 if (typeof focusOnTask === 'function') {
@@ -618,6 +764,165 @@ class CustomCommandPalette {
         }
     }
     
+    openGoNavigation() {
+        if (this.isOpen) return;
+        
+        this.isOpen = true;
+        this.isSearchMode = false;
+        this.isGoMode = true;
+        this.elements.overlay.style.display = 'flex';
+        
+        // Set placeholder for go mode
+        this.elements.searchInput.placeholder = 'Go to...';
+        
+        // Clear search and reset
+        this.elements.searchInput.value = '';
+        this.selectedIndex = 0;
+        
+        // Create go navigation options
+        this.goOptions = this.createGoOptions();
+        this.filteredCommands = [...this.goOptions];
+        
+        // Show go navigation UI
+        this.renderGoMode();
+        
+        // Focus the search input after a brief delay
+        setTimeout(() => {
+            this.elements.searchInput.focus();
+        }, 10);
+        
+        if (window.debugLog) {
+            window.debugLog('info', 'Go navigation palette opened');
+        }
+    }
+    
+    createGoOptions() {
+        const now = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        return [
+            {
+                id: 'go-today',
+                title: 'Today',
+                description: `Go to ${now.toLocaleDateString()}`,
+                section: 'Quick Navigation',
+                icon: '📅',
+                handler: () => {
+                    gantt.showDate(now);
+                    updateStatus('Jumped to today');
+                }
+            },
+            {
+                id: 'go-project-start',
+                title: 'Project Start',
+                description: 'Go to the beginning of the project',
+                section: 'Quick Navigation',
+                icon: '🏁',
+                handler: () => {
+                    const state = gantt.getState();
+                    gantt.showDate(state.min_date);
+                    updateStatus('Jumped to project start');
+                }
+            },
+            {
+                id: 'go-project-end',
+                title: 'Project End',
+                description: 'Go to the end of the project',
+                section: 'Quick Navigation',
+                icon: '🎯',
+                handler: () => {
+                    const state = gantt.getState();
+                    gantt.showDate(state.max_date);
+                    updateStatus('Jumped to project end');
+                }
+            },
+            {
+                id: 'go-next-milestone',
+                title: 'Next Milestone',
+                description: 'Go to the next milestone from today',
+                section: 'Milestones',
+                icon: '🚩',
+                handler: () => {
+                    const milestones = gantt.getTaskByTime().filter(task => 
+                        task.type === gantt.config.types.milestone && 
+                        new Date(task.start_date) > now
+                    ).sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+                    
+                    if (milestones.length > 0) {
+                        gantt.showTask(milestones[0].id);
+                        gantt.selectTask(milestones[0].id);
+                        updateStatus(`Jumped to milestone: ${milestones[0].text}`);
+                    } else {
+                        updateStatus('No future milestones found');
+                    }
+                }
+            },
+            {
+                id: 'go-previous-milestone',
+                title: 'Previous Milestone',
+                description: 'Go to the previous milestone from today',
+                section: 'Milestones',
+                icon: '🚩',
+                handler: () => {
+                    const milestones = gantt.getTaskByTime().filter(task => 
+                        task.type === gantt.config.types.milestone && 
+                        new Date(task.start_date) < now
+                    ).sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                    
+                    if (milestones.length > 0) {
+                        gantt.showTask(milestones[0].id);
+                        gantt.selectTask(milestones[0].id);
+                        updateStatus(`Jumped to milestone: ${milestones[0].text}`);
+                    } else {
+                        updateStatus('No past milestones found');
+                    }
+                }
+            },
+            {
+                id: 'go-current-month',
+                title: 'Current Month',
+                description: `Go to ${monthNames[now.getMonth()]} ${now.getFullYear()}`,
+                section: 'Calendar',
+                icon: '📆',
+                handler: () => {
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    gantt.showDate(monthStart);
+                    updateStatus(`Jumped to ${monthNames[now.getMonth()]} ${now.getFullYear()}`);
+                }
+            },
+            {
+                id: 'go-next-month',
+                title: 'Next Month',
+                description: `Go to ${monthNames[(now.getMonth() + 1) % 12]} ${now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()}`,
+                section: 'Calendar',
+                icon: '📆',
+                handler: () => {
+                    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                    gantt.showDate(nextMonth);
+                    updateStatus(`Jumped to ${monthNames[nextMonth.getMonth()]} ${nextMonth.getFullYear()}`);
+                }
+            },
+            {
+                id: 'go-selected-task',
+                title: 'Selected Task',
+                description: 'Center view on currently selected task',
+                section: 'Task Navigation',
+                icon: '🎯',
+                handler: () => {
+                    const selectedId = gantt.getSelectedId();
+                    if (selectedId) {
+                        gantt.showTask(selectedId);
+                        const task = gantt.getTask(selectedId);
+                        updateStatus(`Centered on: ${task.text}`);
+                    } else {
+                        updateStatus('No task selected');
+                    }
+                }
+            }
+        ];
+    }
+    
     renderSearchMode() {
         const container = this.elements.resultsContainer;
         container.innerHTML = '';
@@ -672,17 +977,28 @@ class CustomCommandPalette {
                 taskElement.classList.add('selected');
             }
             
-            // Format dates
-            const startDate = new Date(task.start_date).toLocaleDateString();
-            const endDate = new Date(task.end_date).toLocaleDateString();
-            
-            taskElement.innerHTML = `
-                <div class="command-icon">📋</div>
-                <div class="command-content">
-                    <div class="command-title">${this.highlightMatch(task.text, this.elements.searchInput.value)}</div>
-                    <div class="command-description">${startDate} - ${endDate} | Progress: ${Math.round(task.progress * 100)}%</div>
-                </div>
-            `;
+            // Special handling for month navigation
+            if (task.type === 'month') {
+                taskElement.innerHTML = `
+                    <span class="command-icon">${task.icon}</span>
+                    <div class="command-content">
+                        <div class="command-title">${task.text}</div>
+                        <div class="command-description">Jump to the beginning of ${task.monthData.displayName}</div>
+                    </div>
+                `;
+            } else {
+                // Format dates
+                const startDate = new Date(task.start_date).toLocaleDateString();
+                const endDate = new Date(task.end_date).toLocaleDateString();
+                
+                taskElement.innerHTML = `
+                    <div class="command-icon">📋</div>
+                    <div class="command-content">
+                        <div class="command-title">${this.highlightMatch(task.text, this.elements.searchInput.value)}</div>
+                        <div class="command-description">${startDate} - ${endDate} | Progress: ${Math.round(task.progress * 100)}%</div>
+                    </div>
+                `;
+            }
             
             container.appendChild(taskElement);
         });
@@ -695,11 +1011,67 @@ class CustomCommandPalette {
         return text.replace(regex, '<mark>$1</mark>');
     }
     
+    renderGoMode() {
+        const container = this.elements.resultsContainer;
+        container.innerHTML = '';
+        
+        if (this.filteredCommands.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'no-results';
+            noResults.textContent = 'No navigation options found';
+            container.appendChild(noResults);
+            return;
+        }
+        
+        // Group commands by section
+        const sections = {};
+        this.filteredCommands.forEach(command => {
+            if (!sections[command.section]) {
+                sections[command.section] = [];
+            }
+            sections[command.section].push(command);
+        });
+        
+        // Render sections
+        let globalIndex = 0;
+        Object.entries(sections).forEach(([section, commands]) => {
+            // Section header
+            const sectionHeader = document.createElement('div');
+            sectionHeader.className = 'section-header';
+            sectionHeader.textContent = section;
+            container.appendChild(sectionHeader);
+            
+            // Commands in section
+            commands.forEach(command => {
+                const commandElement = document.createElement('div');
+                commandElement.className = 'command-item';
+                commandElement.dataset.commandId = command.id;
+                
+                if (globalIndex === this.selectedIndex) {
+                    commandElement.classList.add('selected');
+                }
+                
+                commandElement.innerHTML = `
+                    <span class="command-icon">${command.icon}</span>
+                    <div class="command-content">
+                        <div class="command-title">${command.title}</div>
+                        <div class="command-description">${command.description}</div>
+                    </div>
+                `;
+                
+                container.appendChild(commandElement);
+                globalIndex++;
+            });
+        });
+    }
+    
     close() {
         if (!this.isOpen) return;
         
         this.isOpen = false;
         this.isSearchMode = false;
+        this.isFocusMode = false;
+        this.isGoMode = false;
         this.elements.overlay.style.display = 'none';
         
         // Return focus to gantt

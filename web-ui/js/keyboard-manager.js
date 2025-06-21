@@ -427,6 +427,23 @@ class KeyboardManager {
             return 'handled';
         });
         
+        // 'g' key - Go navigation
+        this.registerGlobalHotkey('g', (e, currentState) => {
+            if (currentState === this.States.CUSTOM_PALETTE_OPEN || 
+                currentState === this.States.HELP_OPEN) {
+                return 'continue'; // Let palette/help handle it
+            }
+            
+            this.debug('Global g pressed - opening go navigation');
+            if (window.customCommandPalette) {
+                window.customCommandPalette.openGoNavigation();
+                this.debug('Opened go navigation palette');
+                this.updateState();
+            }
+            
+            return 'handled';
+        });
+        
         // '?' key - Show keyboard help
         // Register as 'shift+?' because that's what the browser reports when pressing Shift+/
         this.registerGlobalHotkey('shift+?', (e, currentState) => {

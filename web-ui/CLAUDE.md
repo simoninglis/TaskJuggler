@@ -1,5 +1,37 @@
 # TaskJuggler Web UI - Claude Instructions
 
+## Design Principles
+
+### VIM-Like Navigation
+The web UI follows VIM-like navigation principles where possible:
+- **Modal operation**: Different modes for different tasks (navigation, search, edit)
+- **Single key commands**: Most common operations use single keys without modifiers
+- **Mnemonic keys**: Key choices based on action names (e.g., 'f' for focus, '/' for search)
+- **Efficiency**: Minimize keystrokes for common operations
+- **Home row focus**: Keep fingers on home row for navigation
+
+Current VIM-inspired bindings:
+- `/` - Search (like VIM's search) - includes month navigation
+- `?` - Help (like VIM's help)
+- `g` - Go navigation (like VIM's 'gg' but opens navigation menu)
+- `F` - Focus mode (capital F for special operation)
+- `Esc` - Exit modes/cancel operations
+- `+/-` - Zoom in/out
+- `Space` - Toggle expand/collapse
+
+Future VIM-like enhancements to consider:
+- `j/k` - Up/down navigation (supplement arrow keys)
+- `h/l` - Left/right navigation (collapse/expand)
+- `gg` - Go to first task
+- `G` - Go to last task
+- `n/N` - Next/previous search result
+- `:` - Command mode for advanced operations
+- `m{mark}` - Set bookmarks on tasks
+- `'{mark}` - Jump to bookmarked task
+- `zc/zo` - Close/open folds (task groups)
+- `za` - Toggle fold
+- `.` - Repeat last action
+
 ## Server Management
 
 The user will start the web UI server in a separate tmux session using one of these commands:
@@ -59,6 +91,7 @@ The web UI implements custom keyboard navigation:
 - **Arrow Up/Down**: Navigate between tasks
 - **Arrow Left/Right**: Collapse/expand tasks with children
 - **+/-**: Zoom in/out on the timeline
+- **g**: Go navigation - quick jumps to today, project start/end, milestones, months
 - **Ctrl+F**: Focus search box
 - **Ctrl+Shift+P**: Open command palette
 - **/**: Search tasks in command palette
@@ -184,6 +217,16 @@ The command palette (Ctrl+K) provides the following commands:
 - **Zoom to year view**: Switch timeline to yearly scale
 - **Expand all tasks**: Open all parent tasks
 - **Collapse all tasks**: Close all parent tasks
+
+### Go Navigation (accessed via 'g' key)
+- **Today**: Jump to current date
+- **Project Start**: Jump to beginning of project timeline
+- **Project End**: Jump to end of project timeline
+- **Next Milestone**: Jump to next milestone from today
+- **Previous Milestone**: Jump to previous milestone from today
+- **Current Month**: Jump to start of current month
+- **Next Month**: Jump to start of next month
+- **Selected Task**: Center view on currently selected task
 
 ## Testing
 
