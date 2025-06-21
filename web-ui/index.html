@@ -250,7 +250,7 @@
             ←/→: Collapse/Expand | 
             Space: Toggle expand | 
             +/-: Zoom | 
-            Enter: Edit (in edit mode)
+            Enter: Toggle expand/collapse (parent tasks) or Edit (leaf tasks in edit mode)
         </div>
     </div>
 
@@ -272,6 +272,10 @@
             marker: true,
             keyboard_navigation: true
         });
+        
+        // Disable DHTMLX's built-in keyboard navigation to prevent conflicts
+        gantt.config.keyboard_navigation = false;
+        gantt.config.keyboard_navigation_cells = false;
         
         // Add today line
         gantt.addMarker({
@@ -574,6 +578,9 @@
         }
         
         function setZoom(zoom) {
+            // Reset date scale template to default first
+            gantt.templates.date_scale = null;
+            
             switch(zoom) {
                 case "hour":
                     gantt.config.scale_unit = "day";
@@ -603,7 +610,11 @@
                     break;
                 case "quarter":
                     gantt.config.scale_unit = "quarter";
-                    gantt.config.date_scale = "Q%q %Y";
+                    // Custom template for quarter display
+                    gantt.templates.date_scale = function(date) {
+                        const quarter = Math.floor(date.getMonth() / 3) + 1;
+                        return "Q" + quarter + " " + date.getFullYear();
+                    };
                     gantt.config.subscales = [
                         {unit: "month", step: 1, date: "%M"}
                     ];
@@ -612,7 +623,10 @@
                     gantt.config.scale_unit = "year";
                     gantt.config.date_scale = "%Y";
                     gantt.config.subscales = [
-                        {unit: "quarter", step: 1, date: "Q%q"}
+                        {unit: "quarter", step: 1, date: function(date) {
+                            const quarter = Math.floor(date.getMonth() / 3) + 1;
+                            return "Q" + quarter;
+                        }}
                     ];
                     break;
             }
@@ -791,59 +805,72 @@
                 
                 // Enter to toggle expand/collapse for parent tasks, or edit in edit mode
                 if (e.key === 'Enter') {
-                    if (window.debugLog) {
-                        const hasChildValue = selectedId ? gantt.hasChild(selectedId) : null;
-                        window.debugLog('debug', 'Enter key handler triggered', {
-                            selectedId: selectedId, 
-                            isReadOnly: isReadOnly,
-                            hasChild: hasChildValue,
-                            hasChildType: typeof hasChildValue,
-                            hasChildTruthy: !!hasChildValue,
-                            task: selectedId ? gantt.getTask(selectedId) : null
-                        });
-                    }
                     e.preventDefault();
                     e.stopPropagation();
+                    
                     if (selectedId) {
                         const childCount = gantt.hasChild(selectedId);
-                        if (window.debugLog) window.debugLog('debug', 'Checking hasChild', {
-                            selectedId: selectedId,
-                            childCount: childCount,
-                            childCountType: typeof childCount,
-                            childCountTruthy: !!childCount,
-                            greaterThanZero: childCount > 0,
-                            comparisonResult: (childCount > 0) ? 'true' : 'false'
-                        });
+                        
+                        if (window.debugLog) {
+                            window.debugLog('debug', 'Enter key handler triggered', {
+                                selectedId: selectedId, 
+                                isReadOnly: isReadOnly,
+                                hasChild: childCount
+                            });
+                        }
                         
                         // If task has children, toggle expand/collapse
-                        if (window.debugLog) window.debugLog('debug', 'About to check if childCount > 0', {
-                            childCount: childCount,
-                            condition: childCount > 0
-                        });
-                        
                         if (childCount > 0) {
-                            const task = gantt.getTask(selectedId);
-                            if (window.debugLog) window.debugLog('debug', 'Task has children, checking open state', {
-                                task: selectedId,
-                                childCount: childCount,
-                                isOpen: task.$open,
-                                ganttState: gantt.getState().opened[selectedId]
-                            });
+                            if (window.debugLog) window.debugLog('debug', 'Task has children, toggling expand/collapse');
                             
-                            if (task.$open) {
-                                if (window.debugLog) window.debugLog('debug', 'Enter pressed - collapsing parent task', {task: selectedId});
-                                gantt.close(selectedId);
-                            } else {
-                                if (window.debugLog) window.debugLog('debug', 'Enter pressed - expanding parent task', {task: selectedId});
-                                gantt.open(selectedId);
+                            try {
+                                // Get the task to check its current open state
+                                const task = gantt.getTask(selectedId);
+                                const isCurrentlyOpen = task.$open;
+                                
+                                if (window.debugLog) {
+                                    window.debugLog('debug', 'Got task state', {
+                                        taskId: selectedId,
+                                        isCurrentlyOpen: isCurrentlyOpen,
+                                        task$open: task.$open
+                                    });
+                                }
+                                
+                                // Toggle the state
+                                if (isCurrentlyOpen) {
+                                    if (window.debugLog) window.debugLog('debug', 'Task is open, closing it', {task: selectedId});
+                                    gantt.close(selectedId);
+                                    if (window.debugLog) window.debugLog('debug', 'Close command completed');
+                                } else {
+                                    if (window.debugLog) window.debugLog('debug', 'Task is closed, opening it', {task: selectedId});
+                                    gantt.open(selectedId);
+                                    if (window.debugLog) window.debugLog('debug', 'Open command completed');
+                                }
+                                
+                                // Verify the change
+                                const taskAfter = gantt.getTask(selectedId);
+                                if (window.debugLog) {
+                                    window.debugLog('debug', 'Task state after toggle', {
+                                        taskId: selectedId,
+                                        wasClosed: !isCurrentlyOpen,
+                                        nowOpen: taskAfter.$open,
+                                        success: taskAfter.$open !== isCurrentlyOpen
+                                    });
+                                }
+                            } catch (error) {
+                                if (window.debugLog) window.debugLog('error', 'Error in expand/collapse logic', {
+                                    selectedId: selectedId,
+                                    error: error.message,
+                                    stack: error.stack
+                                });
                             }
                         }
                         // Otherwise, if in edit mode, open lightbox
                         else if (!isReadOnly) {
-                            if (window.debugLog) window.debugLog('debug', 'Enter pressed - opening lightbox for leaf task', {task: selectedId, childCount: childCount});
+                            if (window.debugLog) window.debugLog('debug', 'Enter pressed - opening lightbox for leaf task', {task: selectedId});
                             gantt.showLightbox(selectedId);
                         } else {
-                            if (window.debugLog) window.debugLog('debug', 'Enter pressed - no action (leaf task in read-only mode)', {task: selectedId, childCount: childCount});
+                            if (window.debugLog) window.debugLog('debug', 'Enter pressed - no action (leaf task in read-only mode)', {task: selectedId});
                         }
                     }
                     return;
