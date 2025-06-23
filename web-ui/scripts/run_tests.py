@@ -2,7 +2,7 @@
 """
 Test runner for TaskJuggler Web UI tests
 Usage: python run_tests.py [category]
-Categories: command_palette, keyboard, integration, components, all
+Categories: command_palette, keyboard, integration, components, smoke, regression, all
 """
 
 import sys

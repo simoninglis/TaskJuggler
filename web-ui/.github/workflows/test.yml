@@ -1,0 +1,105 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install Node dependencies
+      working-directory: ./web-ui
+      run: npm ci
+      
+    - name: Install Python dependencies
+      working-directory: ./web-ui
+      run: |
+        pip install poetry
+        poetry install
+        
+    - name: Install Playwright browsers
+      working-directory: ./web-ui
+      run: poetry run playwright install chromium
+      
+    - name: Start development server
+      working-directory: ./web-ui
+      run: |
+        npm run dev &
+        sleep 5  # Wait for server to start
+        
+    - name: Run smoke tests
+      working-directory: ./web-ui
+      run: poetry run python tests/run_test_suites.py smoke
+      
+    - name: Upload test report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: smoke-test-report
+        path: web-ui/tests/test_report.txt
+
+  regression-tests:
+    name: Regression Tests
+    runs-on: ubuntu-latest
+    needs: smoke-tests  # Only run if smoke tests pass
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install Node dependencies
+      working-directory: ./web-ui
+      run: npm ci
+      
+    - name: Install Python dependencies
+      working-directory: ./web-ui
+      run: |
+        pip install poetry
+        poetry install
+        
+    - name: Install Playwright browsers
+      working-directory: ./web-ui
+      run: poetry run playwright install chromium
+      
+    - name: Start development server
+      working-directory: ./web-ui
+      run: |
+        npm run dev &
+        sleep 5  # Wait for server to start
+        
+    - name: Run regression tests
+      working-directory: ./web-ui
+      run: poetry run python tests/run_test_suites.py regression
+      
+    - name: Upload test report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: regression-test-report
+        path: web-ui/tests/test_report.txt

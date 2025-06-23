@@ -4,6 +4,14 @@ This directory contains all automated tests for the TaskJuggler Web UI, organize
 
 ## Directory Structure
 
+- **smoke/** - Quick smoke tests for critical functionality (2 min)
+  - Application loading and initialization
+  - Core feature verification
+  - Must pass before deployment
+- **regression/** - Comprehensive regression test suite (10 min)
+  - Full feature coverage
+  - Edge cases and error handling
+  - Performance metrics
 - **command_palette/** - Tests for command palette functionality (Ctrl+Shift+P)
   - Basic open/close behavior
   - Search mode, go mode, focus mode
@@ -40,7 +48,19 @@ npm run dev
 poetry run python server/serve-with-vite.py
 ```
 
-### Run all tests:
+### Run test suites:
+```bash
+# Quick smoke tests (2 min)
+python tests/run_test_suites.py smoke
+
+# Full regression tests (10 min)
+python tests/run_test_suites.py regression
+
+# Both suites (smoke first, then regression)
+python tests/run_test_suites.py all
+```
+
+### Run all tests by category:
 ```bash
 python scripts/run_tests.py all
 ```
@@ -51,6 +71,8 @@ python scripts/run_tests.py command_palette
 python scripts/run_tests.py keyboard
 python scripts/run_tests.py integration
 python scripts/run_tests.py components
+python scripts/run_tests.py smoke
+python scripts/run_tests.py regression
 ```
 
 ### Run individual test:
