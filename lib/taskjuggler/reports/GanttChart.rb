@@ -217,35 +217,83 @@ class TaskJuggler
       @lines.each_with_index do |line, index|
         # Get the property (task or resource) for this line
         property = line.query.property
+        scenarioIdx = line.query.scenarioIdx
         
         # Skip if not a task
         next unless property.is_a?(Task)
         
+        # Build dependencies array with type information
+        dependencies = []
+        property['depends', scenarioIdx].each do |dep|
+          dependencies << {
+            'task' => dep.task.fullId,
+            'type' => dep.onEnd ? 'finish-to-start' : 'start-to-start',
+            'gapDuration' => dep.gapDuration,
+            'gapUnit' => 'days'
+          }
+        end
+        
+        # Build resource allocations
+        allocations = []
+        property['assignedresources', scenarioIdx].each do |resource|
+          allocations << {
+            'resource' => resource.fullId,
+            'name' => resource.name,
+            'effort' => property['effort', scenarioIdx]
+          }
+        end
+        
         task_data = {
-          id: property.fullId,
-          name: property.name || property.id,
-          type: property.container? ? 'container' : 
-                property.milestone? ? 'milestone' : 'task',
-          start: property.get('start').to_s('%Y-%m-%d'),
-          end: property.get('end').to_s('%Y-%m-%d'),
-          duration: (property.get('end') - property.get('start')) / (24 * 60 * 60),
-          progress: property.get('complete') * 100,
-          dependencies: property.get('depends').map { |dep| dep.fullId }
+          'id' => property.fullId,
+          'name' => property.name || property.id,
+          'type' => property.container? ? 'container' : 
+                    (property.milestone? ? 'milestone' : 'task'),
+          'start' => property['start', scenarioIdx].to_s('%Y-%m-%d'),
+          'end' => property['end', scenarioIdx].to_s('%Y-%m-%d'),
+          'duration' => property['duration', scenarioIdx],
+          'effort' => property['effort', scenarioIdx],
+          'cost' => property['cost', scenarioIdx],
+          'complete' => property['complete', scenarioIdx],
+          'status' => property['status', scenarioIdx],
+          'priority' => property['priority', scenarioIdx],
+          'responsible' => property['responsible', scenarioIdx].first&.fullId,
+          'wbs' => property.get('wbs'),
+          'parent' => property.parent ? property.parent.fullId : nil,
+          'children' => property.children.map(&:fullId),
+          'dependencies' => dependencies,
+          'allocations' => allocations,
+          'flags' => property['flags', scenarioIdx].map(&:id),
+          'note' => property.get('note')
         }
+        
+        # Remove nil values to reduce JSON size
+        task_data.compact!
         
         tasks << task_data
       end
       
+      # Build hierarchical structure
+      rootTasks = tasks.select { |t| t['parent'].nil? }
+      
       # Chart metadata
       chart_data = {
-        project: @table.project.name,
-        start: @start.to_s('%Y-%m-%d'),
-        end: @end.to_s('%Y-%m-%d'),
-        scale: @scale.to_s,
-        tasks: tasks
+        'version' => '1.0',
+        'generated' => TjTime.new.to_s,
+        'project' => {
+          'name' => @table.project.name,
+          'start' => @table.project['start'].to_s('%Y-%m-%d'),
+          'end' => @table.project['end'].to_s('%Y-%m-%d'),
+          'now' => @table.project['now'].to_s('%Y-%m-%d')
+        },
+        'view' => {
+          'start' => @start.to_s('%Y-%m-%d'),
+          'end' => @end.to_s('%Y-%m-%d'),
+          'scale' => @scale['name']
+        },
+        'tasks' => tasks
       }
       
-      chart_data.to_json
+      JSON.pretty_generate(chart_data)
     end
 
     # Utility function that convers a date to the corresponding X-position in

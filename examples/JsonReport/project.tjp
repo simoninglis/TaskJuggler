@@ -1,0 +1,77 @@
+project json_example "JSON Export Example" 2025-01-01 +3m {
+  timezone "UTC"
+  currency "USD"
+  currencyformat "(" ")" "," "." 2
+  now 2025-01-23
+  
+  # Define project-wide working hours
+  workinghours mon - fri 9:00 - 12:00, 13:00 - 17:00
+  workinghours sat, sun off
+}
+
+# Define resources
+resource team "Development Team" {
+  resource dev1 "Alice Smith" {
+    email "alice@example.com"
+    rate 75.0
+  }
+  resource dev2 "Bob Jones" {
+    email "bob@example.com" 
+    rate 65.0
+  }
+}
+
+# Define cost accounts
+account costs "Project Costs" {
+  account dev "Development" 
+}
+
+# Define tasks
+task project "Web Application" {
+  start ${projectstart}
+  
+  task design "Design Phase" {
+    effort 5d
+    allocate dev1
+    complete 100
+  }
+  
+  task development "Development" {
+    depends !design
+    
+    task backend "Backend Development" {
+      effort 10d
+      allocate dev2
+      complete 50
+      charge 6500 onend
+      account costs.dev
+    }
+    
+    task frontend "Frontend Development" {
+      effort 15d
+      allocate dev1
+      depends !!backend
+      charge 11250 onend
+      account costs.dev
+    }
+  }
+  
+  task testing "Testing Phase" {
+    depends !development
+    effort 8d
+    allocate dev1, dev2
+    milestone
+  }
+}
+
+# Generate traditional HTML report
+taskreport html "TaskReport" {
+  formats html
+  columns bsi, name, start, end, effort, cost, chart { scale day }
+}
+
+# Generate comprehensive JSON export
+jsonreport json_export "project_data.json" {
+  formats json
+  scenarios plan
+}

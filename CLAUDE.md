@@ -27,11 +27,17 @@ This makes the UI efficient for keyboard users and maintains consistency with de
 - **Test Infrastructure**: All 184 tests now passing (116 unit + 68 RSpec)
 - **TJP Include Support**: Fixed restriction that prevented .tjp files from including other .tjp files (now both .tjp and .tji extensions are allowed)
 - **Version Identifier**: Changed version to 3.8.1-DEV to clearly indicate this is a development fork
+- **JSON Export**: Added comprehensive JSON export format for web UI integration with full project data export
 
 ### Implementation Details
 - **Grammar-level approach**: Uses `optionalMinus` pattern for clean separation
 - **Backward compatible**: All existing functionality preserved
 - **New syntax**: `credits 2025-01-02 "Refund" - 500.0` and `charge - 100.0 onend`
+- **JSON Export**: New `jsonreport` type generates comprehensive project data following JSON specification v1.0
+  - Includes tasks, resources, dependencies, costs, and project metadata
+  - Supports multiple scenarios
+  - Enhanced GanttChart JSON output for task reports
+  - See `docs/JSON_GANTT_SPECIFICATION.md` for format details
 
 ## Architecture
 TaskJuggler uses a scanner/parser architecture:
@@ -91,6 +97,14 @@ tj3man-enhanced account            # View manual for 'account' property
 
 # Test negative numbers example
 tj3 test_negative_example.tjp --no-reports
+
+# Generate JSON export for web UI
+tj3 project.tjp  # Generates project_data.json if jsonreport is defined
+
+# Example JSON report in .tjp file:
+# jsonreport "project_export" {
+#   formats json
+# }
 
 # Development/Testing
 rake test                          # Run all tests

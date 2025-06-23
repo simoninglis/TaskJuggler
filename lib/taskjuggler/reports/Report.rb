@@ -29,6 +29,7 @@ require 'taskjuggler/reports/ICalReport'
 require 'taskjuggler/reports/CSVFile'
 require 'taskjuggler/reports/Navigator'
 require 'taskjuggler/reports/ReportContext'
+require 'taskjuggler/reports/JsonReport'
 require 'taskjuggler/HTMLDocument'
 
 class TaskJuggler
@@ -142,6 +143,8 @@ class TaskJuggler
         @content = StatusSheetReport.new(self)
       when :timeSheet
         @content = TimeSheetReport.new(self)
+      when :jsonreport
+        @content = JsonReport.new(self)
       else
         raise "Unknown report type"
       end

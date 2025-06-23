@@ -102,6 +102,14 @@ window.loadTaskJugglerData = function loadTaskJugglerData() {
 
 // Convert TaskJuggler JSON to DHTMLX format
 function convertTaskJugglerToDHMLX(tjData) {
+    // Handle both old simple format and new comprehensive format
+    const isNewFormat = tjData.version && tjData.version === '1.0';
+    
+    if (isNewFormat) {
+        return convertComprehensiveFormat(tjData);
+    }
+    
+    // Legacy format conversion
     const tasks = tjData.tasks.map(task => ({
         id: task.id,
         text: task.name,
@@ -120,6 +128,91 @@ function convertTaskJugglerToDHMLX(tjData) {
         data: tasks,
         links: generateLinks(tjData.tasks)
     };
+}
+
+// Convert comprehensive format from JsonReport
+function convertComprehensiveFormat(tjData) {
+    const tasks = [];
+    const links = [];
+    let linkId = 1;
+    
+    // Process tasks
+    tjData.tasks.forEach(task => {
+        // Use the first scenario if multiple scenarios exist
+        const scenarioId = tjData.scenarios ? tjData.scenarios[0].id : 'plan';
+        const scenario = task.scenarios[scenarioId] || task;
+        
+        const dhtmlxTask = {
+            id: task.id,
+            text: task.name,
+            start_date: scenario.start || task.start,
+            end_date: scenario.end || task.end,
+            duration: scenario.duration || task.duration,
+            progress: (scenario.complete || 0) / 100,
+            type: task.type === 'milestone' ? gantt.config.types.milestone :
+                  task.type === 'container' ? gantt.config.types.project : 
+                  gantt.config.types.task,
+            parent: task.parent || getParentId(task.id),
+            // Additional attributes for enhanced display
+            effort: scenario.effort,
+            cost: scenario.cost,
+            status: scenario.status,
+            priority: scenario.priority,
+            responsible: scenario.responsible,
+            allocations: task.allocations || [],
+            flags: scenario.flags || [],
+            note: scenario.note,
+            wbs: task.wbs
+        };
+        
+        tasks.push(dhtmlxTask);
+        
+        // Process dependencies
+        if (task.dependencies && task.dependencies.length > 0) {
+            task.dependencies.forEach(dep => {
+                const depTask = typeof dep === 'string' ? dep : dep.task;
+                const depType = typeof dep === 'object' ? 
+                    convertDependencyType(dep.type) : '0';
+                
+                links.push({
+                    id: linkId++,
+                    source: depTask,
+                    target: task.id,
+                    type: depType,
+                    lag: dep.gapDuration || 0
+                });
+            });
+        }
+    });
+    
+    // Store additional project data globally for reference
+    if (window.debugLog) {
+        window.debugLog('info', 'Loaded comprehensive TaskJuggler data', {
+            projectName: tjData.project?.name,
+            taskCount: tasks.length,
+            resourceCount: tjData.resources?.length || 0,
+            scenarioCount: tjData.scenarios?.length || 0
+        });
+    }
+    
+    // Store the full data for future use
+    window.taskJugglerData = tjData;
+    
+    return {
+        data: tasks,
+        links: links
+    };
+}
+
+// Convert dependency type string to DHTMLX numeric type
+function convertDependencyType(typeStr) {
+    const typeMap = {
+        'finish-to-start': '0',
+        'start-to-start': '1',
+        'finish-to-finish': '2',
+        'start-to-finish': '3'
+    };
+    return typeMap[typeStr] || '0';
 }
 
 // Extract parent ID from hierarchical task ID
