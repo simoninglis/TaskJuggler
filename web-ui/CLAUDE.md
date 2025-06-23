@@ -36,20 +36,20 @@ Future VIM-like enhancements to consider:
 
 The user will start the web UI server in a separate tmux session using one of these commands:
 
-**Debug server with WebSocket logging (recommended for debugging):**
+**Vite development server (recommended - includes hot module replacement):**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && poetry run python server/serve-with-debug.py
+cd /home/singlis/work/TaskJuggler/web-ui && npm run dev
 ```
 
-**Auto-reload server (recommended for development):**
+**Vite + WebSocket debug server (for full debugging):**
 ```bash
-cd /home/singlis/work/TaskJuggler/web-ui && python3 server/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
+cd /home/singlis/work/TaskJuggler/web-ui && poetry run python server/serve-with-vite.py
 ```
 
-**Standard server:**
-```bash
-cd /home/singlis/work/TaskJuggler/web-ui && python3 server/serve.py 2>&1 | tee /tmp/webui-server.log
-```
+**Legacy servers (deprecated):**
+- Debug server: `poetry run python server/serve-with-debug.py`
+- Auto-reload server: `python3 server/serve-with-reload.py`
+- Standard server: `python3 server/serve.py`
 
 ## Server Information
 
@@ -173,6 +173,22 @@ lsof -i :8002  # WebSocket debug port
 
 ## Development Workflow
 
+### With Vite (Recommended)
+1. Install dependencies: `npm install`
+2. Start Vite dev server: `npm run dev`
+3. Open http://localhost:8001 in browser
+4. Edit files - Vite provides instant hot module replacement (HMR)
+5. Build for production: `npm run build`
+
+### Benefits of Vite
+- **ES Modules**: Native support for modern JavaScript modules
+- **Hot Module Replacement**: Instant updates without page reload
+- **Dependency Bundling**: Automatic bundling of npm packages like Lit
+- **Fast Builds**: Lightning-fast development and production builds
+- **TypeScript Ready**: Built-in TypeScript support
+- **Web Components**: First-class support for Lit and other frameworks
+
+### Legacy Workflow
 1. User starts server in separate tmux session
 2. Server logs HTTP requests to `/tmp/webui-server.log`
 3. Debug server also logs WebSocket messages to `/tmp/webui-debug.log`

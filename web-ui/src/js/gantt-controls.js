@@ -1,17 +1,61 @@
 // UI Control Functions
 // This file contains all the UI control functions for zoom, search, filters, and view modes
 
-// Global state
-let isReadOnly = true;  // Start in read-only mode for safety
-let currentZoom = "day";
-let originalData = null;
-let searchTimeout = null;
-let isFiltered = false;
-let focusedTaskId = null;
-let focusedTaskName = null;
+// Import state store
+import stateStore from './stateStore.js';
 
-// Expose currentZoom for testing
-window.currentZoom = currentZoom;
+// Local variables (not part of global state)
+let searchTimeout = null;
+
+// Initialize state subscriptions
+initializeStateSubscriptions();
+
+// Helper function to save original gantt data
+function saveOriginalGanttData() {
+    if (!window.originalGanttData) {
+        window.originalGanttData = gantt.serialize();
+        // Also save to state store for consistency
+        stateStore.set('originalData', window.originalGanttData);
+    }
+}
+
+// Helper function to get original gantt data
+function getOriginalGanttData() {
+    return window.originalGanttData || stateStore.get('originalData');
+}
+
+// Function to set up state change listeners
+function initializeStateSubscriptions() {
+    // Subscribe to zoom changes
+    stateStore.subscribe('currentZoom', (newZoom, oldZoom) => {
+        if (window.debugLog) {
+            window.debugLog('state', 'Zoom changed', { from: oldZoom, to: newZoom });
+        }
+        // Expose for testing
+        window.currentZoom = newZoom;
+    });
+    
+    // Subscribe to read-only mode changes
+    stateStore.subscribe('isReadOnly', (isReadOnly) => {
+        // Update gantt configuration
+        if (typeof gantt !== 'undefined') {
+            gantt.config.readonly = isReadOnly;
+            gantt.config.drag_move = !isReadOnly;
+            gantt.config.drag_resize = !isReadOnly;
+            gantt.config.drag_progress = !isReadOnly;
+        }
+    });
+    
+    // Subscribe to focus mode changes
+    stateStore.subscribe('focusedTaskId', (taskId) => {
+        if (window.debugLog) {
+            window.debugLog('state', 'Focus task changed', { taskId });
+        }
+    });
+    
+    // Initialize window.currentZoom for backward compatibility
+    window.currentZoom = stateStore.getZoom();
+}
 
 // Search and filter functions
 function handleSearchKeyUp(event) {
@@ -35,6 +79,7 @@ function debounceSearch() {
 }
 
 function filterTasks(searchTerm, focusFirstMatch = false) {
+    const originalData = stateStore.get('originalData');
     if (!originalData) return;
     
     if (!searchTerm) {
@@ -107,7 +152,7 @@ function filterTasks(searchTerm, focusFirstMatch = false) {
         }, 100);
     }
     
-    isFiltered = true;
+    stateStore.set('isFiltered', true);
     updateStatus(`Found ${matchingTaskIds.size} matching tasks, showing ${filteredData.data.length} total tasks with context`);
 }
 
@@ -129,6 +174,7 @@ function addParentHierarchy(taskId, allTasks, includeSet) {
 }
 
 function clearSearch() {
+    const originalData = stateStore.get('originalData');
     if (!originalData) return;
     
     document.getElementById('searchInput').value = '';
@@ -137,20 +183,22 @@ function clearSearch() {
     gantt.clearAll();
     gantt.parse(originalData);
     
-    isFiltered = false;
+    stateStore.set('isFiltered', false);
     updateStatus("Search cleared, showing all tasks");
 }
 
 function toggleReadOnly() {
-    isReadOnly = !isReadOnly;
-    gantt.config.readonly = isReadOnly;
+    const currentReadOnly = stateStore.isReadOnly();
+    const newReadOnly = !currentReadOnly;
+    stateStore.setReadOnly(newReadOnly);
+    
     gantt.render();
     
     // Update visual indicators
     const modeText = document.getElementById('modeText');
     const checkbox = document.getElementById('editModeToggle');
     
-    if (isReadOnly) {
+    if (newReadOnly) {
         modeText.textContent = 'View Only';
         modeText.classList.remove('edit-mode');
         checkbox.checked = false;
@@ -160,31 +208,32 @@ function toggleReadOnly() {
         checkbox.checked = true;
     }
     
-    updateStatus(isReadOnly ? "Switched to read-only mode" : "Switched to edit mode");
+    updateStatus(newReadOnly ? "Switched to read-only mode" : "Switched to edit mode");
 }
 
 function zoomIn() {
     const zooms = ["hour", "day", "week", "month", "quarter", "year"];
+    const currentZoom = stateStore.getZoom();
     const currentIndex = zooms.indexOf(currentZoom);
     if (currentIndex > 0) {
-        currentZoom = zooms[currentIndex - 1];
-        setZoom(currentZoom);
+        const newZoom = zooms[currentIndex - 1];
+        setZoom(newZoom);
     }
 }
 
 function zoomOut() {
     const zooms = ["hour", "day", "week", "month", "quarter", "year"];
+    const currentZoom = stateStore.getZoom();
     const currentIndex = zooms.indexOf(currentZoom);
     if (currentIndex < zooms.length - 1) {
-        currentZoom = zooms[currentIndex + 1];
-        setZoom(currentZoom);
+        const newZoom = zooms[currentIndex + 1];
+        setZoom(newZoom);
     }
 }
 
 function setZoom(zoom) {
-    // Update current zoom level
-    currentZoom = zoom;
-    window.currentZoom = zoom;  // Update window property for testing
+    // Update zoom level in state store
+    stateStore.setZoom(zoom);
     
     // Configure scales based on zoom level (using new scales configuration)
     switch(zoom) {
@@ -252,6 +301,7 @@ function calculateScrollAmount() {
     
     // Calculate dates for one minor unit movement
     let nextDate;
+    const currentZoom = stateStore.getZoom();
     switch(currentZoom) {
         case "hour":
             // Minor unit is hour - scroll by 1 hour
@@ -303,7 +353,8 @@ function exportData() {
     updateStatus("Data exported to console. Check browser developer tools.");
 }
 
-function updateStatus(message) {
+// Make updateStatus available globally
+window.updateStatus = function updateStatus(message) {
     document.getElementById('status').textContent = new Date().toLocaleTimeString() + ": " + message;
 }
 
@@ -536,9 +587,8 @@ function focusOnTask(taskId) {
         return;
     }
     
-    // Store focus information
-    focusedTaskId = taskId;
-    focusedTaskName = task.text;
+    // Store focus information in state store
+    stateStore.setFocusedTask(taskId, task.text);
     
     // Get all tasks to include in focused view
     const tasksToShow = new Set();
@@ -583,7 +633,7 @@ function focusOnTask(taskId) {
     gantt.selectTask(taskId);
     gantt.showTask(taskId);
     
-    updateStatus(`Focused on: ${focusedTaskName}`);
+    updateStatus(`Focused on: ${task.text}`);
     showFocusIndicator();
 }
 
@@ -598,6 +648,7 @@ function focusOnCurrentTask() {
 }
 
 function expandFocus() {
+    const focusedTaskId = stateStore.getFocusedTaskId();
     if (!focusedTaskId) {
         updateStatus('No focus active');
         return;
@@ -612,14 +663,14 @@ function expandFocus() {
 }
 
 function exitFocusMode() {
+    const focusedTaskId = stateStore.getFocusedTaskId();
     if (!focusedTaskId) {
         updateStatus('Not in focus mode');
         return;
     }
     
     // Clear focus state
-    focusedTaskId = null;
-    focusedTaskName = null;
+    stateStore.setFocusedTask(null, null);
     
     // Restore original data
     if (window.originalGanttData) {
@@ -647,6 +698,7 @@ function showFocusIndicator() {
     if (filterDiv && filterDesc) {
         filterDiv.style.display = 'block';
         filterDiv.style.background = '#e8f5e9'; // Light green for focus mode
+        const focusedTaskName = stateStore.getFocusedTaskName();
         filterDesc.innerHTML = `<strong>Focus Mode:</strong> ${focusedTaskName}`;
         
         // Update the clear button to exit focus
@@ -790,8 +842,38 @@ function navigateToPreviousMilestone() {
     }
 }
 
+// Make milestone navigation functions globally available
+window.navigateToNextMilestone = navigateToNextMilestone;
+window.navigateToPreviousMilestone = navigateToPreviousMilestone;
+
+// Make zoom functions globally available
+window.zoomIn = zoomIn;
+window.zoomOut = zoomOut;
+window.setZoom = setZoom;
+
+// Make filter functions globally available
+window.filterOverdueTasks = filterOverdueTasks;
+window.filterTodayTasks = filterTodayTasks;
+window.filterWeekTasks = filterWeekTasks;
+window.filterCompletedTasks = filterCompletedTasks;
+window.filterInProgressTasks = filterInProgressTasks;
+window.clearAllFilters = clearAllFilters;
+
+// Make focus functions globally available
+window.focusOnTask = focusOnTask;
+window.focusOnCurrentTask = focusOnCurrentTask;
+window.expandFocus = expandFocus;
+window.exitFocusMode = exitFocusMode;
+
+// Make other control functions globally available
+window.expandAll = expandAll;
+window.collapseAll = collapseAll;
+window.toggleReadOnly = toggleReadOnly;
+window.toggleGrid = toggleGrid;
+
 // Mouse Wheel Zoom
-function initializeMouseWheelZoom() {
+// Make available globally
+window.initializeMouseWheelZoom = function initializeMouseWheelZoom() {
     const ganttElement = document.getElementById('gantt_here');
     if (!ganttElement) return;
     

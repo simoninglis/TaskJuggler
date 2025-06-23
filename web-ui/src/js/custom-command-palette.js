@@ -1,21 +1,41 @@
 // Custom Command Palette Implementation
 // Replaces ninja-keys with a simple, reliable custom solution
 
+// Import state store
+import stateStore from './stateStore.js';
+
 class CustomCommandPalette {
     constructor() {
-        this.isOpen = false;
-        this.isSearchMode = false;
-        this.isFocusMode = false;
-        this.isGoMode = false;
+        // Local data that doesn't need to be in global state
         this.commands = [];
         this.filteredCommands = [];
-        this.selectedIndex = 0;
         this.elements = {};
         this.searchResults = [];
         this.goOptions = [];
         
+        // Subscribe to state changes
+        this.setupStateSubscriptions();
+        
         // Initialize the palette
         this.initialize();
+    }
+    
+    setupStateSubscriptions() {
+        // Subscribe to command palette state changes
+        stateStore.subscribe('commandPalette', (paletteState) => {
+            // Update UI based on state changes
+            if (paletteState.isOpen && !this.elements.overlay.style.display !== 'none') {
+                this.elements.overlay.style.display = 'flex';
+            } else if (!paletteState.isOpen && this.elements.overlay.style.display !== 'none') {
+                this.elements.overlay.style.display = 'none';
+            }
+            
+            // Update selected index if changed externally
+            if (paletteState.selectedIndex !== this.lastSelectedIndex) {
+                this.lastSelectedIndex = paletteState.selectedIndex;
+                this.updateSelection();
+            }
+        });
     }
     
     initialize() {
@@ -88,7 +108,8 @@ class CustomCommandPalette {
         this.elements.resultsContainer.addEventListener('click', (e) => {
             const commandElement = e.target.closest('.command-item');
             if (commandElement) {
-                if (this.isSearchMode) {
+                const mode = stateStore.getCommandPaletteMode();
+                if (mode === 'search' || mode === 'focus') {
                     const taskId = commandElement.dataset.taskId;
                     this.selectTask(taskId);
                 } else {
@@ -212,8 +233,9 @@ class CustomCommandPalette {
                 keywords: 'theme dark light mode toggle switch',
                 icon: '🎨',
                 handler: () => {
-                    if (window.themeManager) {
-                        window.themeManager.toggleTheme();
+                    const themeManager = document.querySelector('theme-manager');
+                    if (themeManager) {
+                        themeManager.toggleTheme();
                     }
                 }
             },
@@ -225,8 +247,9 @@ class CustomCommandPalette {
                 keywords: 'fullscreen full screen maximize expand',
                 icon: '🖥️',
                 handler: () => {
-                    if (window.layoutManager) {
-                        window.layoutManager.toggleFullscreen();
+                    const layoutManager = document.querySelector('layout-manager');
+                    if (layoutManager) {
+                        layoutManager.toggleFullscreen();
                     }
                 }
             },
@@ -400,6 +423,7 @@ class CustomCommandPalette {
         }
         
         this.selectedIndex = 0;
+        stateStore.setCommandPaletteSelectedIndex(0);
         this.renderSearchResults();
     }
     
@@ -507,18 +531,21 @@ class CustomCommandPalette {
     }
     
     selectNext() {
-        if (this.isSearchMode) {
+        const mode = stateStore.getCommandPaletteMode();
+        if (mode === 'search' || mode === 'focus') {
             if (this.searchResults.length === 0) return;
             this.selectedIndex = (this.selectedIndex + 1) % this.searchResults.length;
         } else {
             if (this.filteredCommands.length === 0) return;
             this.selectedIndex = (this.selectedIndex + 1) % this.filteredCommands.length;
         }
+        stateStore.setCommandPaletteSelectedIndex(this.selectedIndex);
         this.updateSelection();
     }
     
     selectPrevious() {
-        if (this.isSearchMode) {
+        const mode = stateStore.getCommandPaletteMode();
+        if (mode === 'search' || mode === 'focus') {
             if (this.searchResults.length === 0) return;
             this.selectedIndex = this.selectedIndex === 0 
                 ? this.searchResults.length - 1 
@@ -529,33 +556,48 @@ class CustomCommandPalette {
                 ? this.filteredCommands.length - 1 
                 : this.selectedIndex - 1;
         }
+        stateStore.setCommandPaletteSelectedIndex(this.selectedIndex);
         this.updateSelection();
     }
     
     updateSelection() {
+        const selectedIndex = stateStore.get('commandPalette.selectedIndex');
         const commandElements = this.elements.resultsContainer.querySelectorAll('.command-item');
         commandElements.forEach((element, index) => {
-            element.classList.toggle('selected', index === this.selectedIndex);
+            element.classList.toggle('selected', index === selectedIndex);
         });
         
         // Scroll selected item into view
-        const selectedElement = commandElements[this.selectedIndex];
+        const selectedElement = commandElements[selectedIndex];
         if (selectedElement) {
             selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
     }
     
     executeSelected() {
-        if (this.isSearchMode) {
-            if (this.searchResults.length === 0 || this.selectedIndex < 0) return;
+        const mode = stateStore.getCommandPaletteMode();
+        if (mode === 'search' || mode === 'focus') {
+            if (this.searchResults.length === 0 || this.selectedIndex < 0) {
+                // Close palette even if no results
+                this.close();
+                return;
+            }
             const selectedTask = this.searchResults[this.selectedIndex];
             this.selectTask(selectedTask.id);
-        } else if (this.isGoMode) {
-            if (this.filteredCommands.length === 0 || this.selectedIndex < 0) return;
+        } else if (mode === 'go') {
+            if (this.filteredCommands.length === 0 || this.selectedIndex < 0) {
+                // Close palette even if no results
+                this.close();
+                return;
+            }
             const selectedCommand = this.filteredCommands[this.selectedIndex];
             this.executeCommand(selectedCommand.id);
         } else {
-            if (this.filteredCommands.length === 0 || this.selectedIndex < 0) return;
+            if (this.filteredCommands.length === 0 || this.selectedIndex < 0) {
+                // Close palette even if no results
+                this.close();
+                return;
+            }
             const selectedCommand = this.filteredCommands[this.selectedIndex];
             this.executeCommand(selectedCommand.id);
         }
@@ -564,7 +606,8 @@ class CustomCommandPalette {
     executeCommand(commandId) {
         // Check if we're in go mode
         let command;
-        if (this.isGoMode) {
+        const mode = stateStore.getCommandPaletteMode();
+        if (mode === 'go') {
             command = this.goOptions.find(cmd => cmd.id === commandId);
         } else {
             command = this.commands.find(cmd => cmd.id === commandId);
@@ -620,7 +663,8 @@ class CustomCommandPalette {
                 return;
             }
             
-            if (this.isFocusMode) {
+            const mode = stateStore.getCommandPaletteMode();
+            if (mode === 'focus') {
                 // Focus mode - filter to show only this task and its subtasks
                 if (typeof focusOnTask === 'function') {
                     focusOnTask(taskId);
@@ -687,7 +731,8 @@ class CustomCommandPalette {
                 commandElement.dataset.commandId = command.id;
                 
                 const globalIndex = this.filteredCommands.indexOf(command);
-                if (globalIndex === this.selectedIndex) {
+                const selectedIndex = stateStore.get('commandPalette.selectedIndex');
+                if (globalIndex === selectedIndex) {
                     commandElement.classList.add('selected');
                 }
                 
@@ -705,10 +750,12 @@ class CustomCommandPalette {
     }
     
     open() {
-        if (this.isOpen) return;
+        if (stateStore.isCommandPaletteOpen()) return;
         
-        this.isOpen = true;
-        this.isSearchMode = false;
+        // Update state store
+        stateStore.setCommandPaletteOpen(true);
+        stateStore.setCommandPaletteMode('command');
+        
         this.elements.overlay.style.display = 'flex';
         
         // Set placeholder for command mode
@@ -718,6 +765,7 @@ class CustomCommandPalette {
         this.elements.searchInput.value = '';
         this.filteredCommands = [...this.commands];
         this.selectedIndex = 0;
+        stateStore.setCommandPaletteSelectedIndex(0);
         
         // Render results and focus search
         this.renderResults();
@@ -733,11 +781,14 @@ class CustomCommandPalette {
     }
     
     openSearch() {
-        if (this.isOpen) return;
+        const wasOpen = stateStore.isCommandPaletteOpen();
         
-        this.isOpen = true;
-        this.isSearchMode = true;
-        this.isFocusMode = false;
+        // Update state store
+        if (!wasOpen) {
+            stateStore.setCommandPaletteOpen(true);
+        }
+        stateStore.setCommandPaletteMode('search');
+        
         this.elements.overlay.style.display = 'flex';
         
         // Set placeholder for search mode
@@ -747,6 +798,7 @@ class CustomCommandPalette {
         this.elements.searchInput.value = '';
         this.searchResults = [];
         this.selectedIndex = 0;
+        stateStore.setCommandPaletteSelectedIndex(0);
         
         // Show search mode UI
         this.renderSearchMode();
@@ -762,11 +814,14 @@ class CustomCommandPalette {
     }
     
     openFocusSearch() {
-        if (this.isOpen) return;
+        const wasOpen = stateStore.isCommandPaletteOpen();
         
-        this.isOpen = true;
-        this.isSearchMode = true;
-        this.isFocusMode = true;
+        // Update state store
+        if (!wasOpen) {
+            stateStore.setCommandPaletteOpen(true);
+        }
+        stateStore.setCommandPaletteMode('focus');
+        
         this.elements.overlay.style.display = 'flex';
         
         // Set placeholder for focus mode
@@ -776,6 +831,7 @@ class CustomCommandPalette {
         this.elements.searchInput.value = '';
         this.searchResults = [];
         this.selectedIndex = 0;
+        stateStore.setCommandPaletteSelectedIndex(0);
         
         // Show focus search mode UI
         this.renderFocusSearchMode();
@@ -791,11 +847,14 @@ class CustomCommandPalette {
     }
     
     openGoNavigation() {
-        if (this.isOpen) return;
+        const wasOpen = stateStore.isCommandPaletteOpen();
         
-        this.isOpen = true;
-        this.isSearchMode = false;
-        this.isGoMode = true;
+        // Update state store
+        if (!wasOpen) {
+            stateStore.setCommandPaletteOpen(true);
+        }
+        stateStore.setCommandPaletteMode('go');
+        
         this.elements.overlay.style.display = 'flex';
         
         // Set placeholder for go mode
@@ -808,6 +867,7 @@ class CustomCommandPalette {
         // Create go navigation options
         this.goOptions = this.createGoOptions();
         this.filteredCommands = [...this.goOptions];
+        stateStore.setCommandPaletteSelectedIndex(0);
         
         // Show go navigation UI
         this.renderGoMode();
@@ -999,7 +1059,8 @@ class CustomCommandPalette {
             taskElement.className = 'command-item';
             taskElement.dataset.taskId = task.id;
             
-            if (index === this.selectedIndex) {
+            const selectedIndex = stateStore.get('commandPalette.selectedIndex');
+            if (index === selectedIndex) {
                 taskElement.classList.add('selected');
             }
             
@@ -1073,7 +1134,8 @@ class CustomCommandPalette {
                 commandElement.className = 'command-item';
                 commandElement.dataset.commandId = command.id;
                 
-                if (globalIndex === this.selectedIndex) {
+                const selectedIndex = stateStore.get('commandPalette.selectedIndex');
+                if (globalIndex === selectedIndex) {
                     commandElement.classList.add('selected');
                 }
                 
@@ -1092,12 +1154,14 @@ class CustomCommandPalette {
     }
     
     close() {
-        if (!this.isOpen) return;
+        if (!stateStore.isCommandPaletteOpen()) return;
         
-        this.isOpen = false;
-        this.isSearchMode = false;
-        this.isFocusMode = false;
-        this.isGoMode = false;
+        // Update state store
+        stateStore.setCommandPaletteOpen(false);
+        stateStore.setCommandPaletteMode('command');
+        stateStore.setCommandPaletteSearchTerm('');
+        stateStore.setCommandPaletteSelectedIndex(0);
+        
         this.elements.overlay.style.display = 'none';
         
         // Return focus to gantt
@@ -1114,10 +1178,10 @@ class CustomCommandPalette {
     // Public API
     getState() {
         return {
-            isOpen: this.isOpen,
+            isOpen: stateStore.isCommandPaletteOpen(),
             commandCount: this.commands.length,
             filteredCount: this.filteredCommands.length,
-            selectedIndex: this.selectedIndex
+            selectedIndex: stateStore.get('commandPalette.selectedIndex')
         };
     }
 }

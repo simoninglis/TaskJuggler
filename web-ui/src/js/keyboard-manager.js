@@ -1,6 +1,9 @@
 // Centralized Keyboard Event Management System  
 // Single source of truth for all keyboard handling in the application
 
+// Import state store
+import stateStore from './stateStore.js';
+
 console.log('🔥 keyboard-manager.js is loading...');
 if (window.debugLog) {
     window.debugLog('debug', 'keyboard-manager.js file is loading');
@@ -18,9 +21,6 @@ class KeyboardManager {
             HELP_OPEN: 'help_open'
         };
         
-        // Current application state
-        this.currentState = this.States.GANTT_FOCUSED;
-        
         // Handler registry - maps states to handler functions
         this.handlers = new Map();
         
@@ -33,8 +33,9 @@ class KeyboardManager {
         // Debug logging
         this.debugEnabled = typeof window.debugLog === 'function';
         
-        // Prefix key for multi-key sequences
-        this.prefixKey = null;
+        // Initialize keyboard state in store
+        stateStore.setKeyboardState(this.States.GANTT_FOCUSED);
+        stateStore.setPrefixKey(null);
         
         // Initialize the manager
         this.initialize();
@@ -76,8 +77,9 @@ class KeyboardManager {
     registerStateDetectors() {
         // Detect if keyboard help is open
         this.stateDetectors.set(this.States.HELP_OPEN, () => {
-            if (window.keyboardHelp) {
-                const state = window.keyboardHelp.getState();
+            const keyboardHelp = document.querySelector('keyboard-help');
+            if (keyboardHelp) {
+                const state = keyboardHelp.getState();
                 return state.isOpen;
             }
             return false;
@@ -85,11 +87,7 @@ class KeyboardManager {
         
         // Detect if custom command palette is open
         this.stateDetectors.set(this.States.CUSTOM_PALETTE_OPEN, () => {
-            if (window.customCommandPalette) {
-                const state = window.customCommandPalette.getState();
-                return state.isOpen;
-            }
-            return false;
+            return stateStore.isCommandPaletteOpen();
         });
         
         // Detect if search input is focused
@@ -149,9 +147,10 @@ class KeyboardManager {
     
     updateState() {
         const newState = this.detectCurrentState();
-        if (newState !== this.currentState) {
-            const oldState = this.currentState;
-            this.currentState = newState;
+        const currentState = stateStore.getKeyboardState();
+        if (newState !== currentState) {
+            const oldState = currentState;
+            stateStore.setKeyboardState(newState);
             this.debug(`State changed: ${oldState} -> ${newState}`);
             this.onStateChange(oldState, newState);
         }
@@ -271,7 +270,7 @@ class KeyboardManager {
             shiftKey: e.shiftKey,
             altKey: e.altKey,
             metaKey: e.metaKey,
-            currentState: this.currentState,
+            currentState: stateStore.getKeyboardState(),
             target: e.target.tagName + (e.target.id ? '#' + e.target.id : ''),
             keyCombo: this.getKeyCombo(e)
         });
@@ -287,10 +286,11 @@ class KeyboardManager {
         }
         
         // Route to state-specific handler
-        const handler = this.handlers.get(this.currentState);
+        const currentState = stateStore.getKeyboardState();
+        const handler = this.handlers.get(currentState);
         if (handler) {
-            this.debug(`Routing ${e.key} to ${this.currentState} handler`);
-            const result = handler(e, this.currentState);
+            this.debug(`Routing ${e.key} to ${currentState} handler`);
+            const result = handler(e, currentState);
             this.debug(`Handler returned: ${result}`);
             
             if (result === 'handled' || result === 'blocked') {
@@ -303,7 +303,7 @@ class KeyboardManager {
                 this.debug(`Handler passed event through - letting browser handle ${e.key}`);
             }
         } else {
-            this.debug(`❌ No handler registered for state: ${this.currentState} - event will be ignored!`);
+            this.debug(`❌ No handler registered for state: ${currentState} - event will be ignored!`);
         }
     }
     
@@ -318,7 +318,7 @@ class KeyboardManager {
         
         if (globalHandler) {
             this.debug(`Processing global hotkey: ${keyCombo}`);
-            return globalHandler(e, this.currentState);
+            return globalHandler(e, stateStore.getKeyboardState());
         }
         
         return 'continue';
@@ -464,12 +464,13 @@ class KeyboardManager {
             }
             
             this.debug('Global ? pressed - toggling keyboard help');
-            if (window.keyboardHelp) {
-                window.keyboardHelp.toggle();
+            const keyboardHelp = document.querySelector('keyboard-help');
+            if (keyboardHelp) {
+                keyboardHelp.toggle();
                 this.debug('Toggled keyboard help');
                 this.updateState();
             } else {
-                this.debug('ERROR: window.keyboardHelp not found!');
+                this.debug('ERROR: keyboard-help element not found!');
             }
             
             return 'handled';
@@ -486,12 +487,13 @@ class KeyboardManager {
             }
             
             this.debug('Global ? pressed - toggling keyboard help');
-            if (window.keyboardHelp) {
-                window.keyboardHelp.toggle();
+            const keyboardHelp = document.querySelector('keyboard-help');
+            if (keyboardHelp) {
+                keyboardHelp.toggle();
                 this.debug('Toggled keyboard help');
                 this.updateState();
             } else {
-                this.debug('ERROR: window.keyboardHelp not found!');
+                this.debug('ERROR: keyboard-help element not found!');
             }
             
             return 'handled';
@@ -534,14 +536,15 @@ class KeyboardManager {
         
         // Handle prefix keys for multi-key sequences
         if (e.key === ']' || e.key === '[') {
-            this.prefixKey = e.key;
-            this.debug('Prefix key captured', { prefix: this.prefixKey });
+            stateStore.setPrefixKey(e.key);
+            this.debug('Prefix key captured', { prefix: e.key });
             return 'handled';
         }
         
         // Handle multi-key sequences
-        if (this.prefixKey) {
-            const sequence = this.prefixKey + e.key;
+        const prefixKey = stateStore.get('keyboard.prefixKey');
+        if (prefixKey) {
+            const sequence = prefixKey + e.key;
             this.debug('Multi-key sequence', { sequence });
             
             switch (sequence) {
@@ -549,19 +552,19 @@ class KeyboardManager {
                     if (typeof navigateToNextMilestone === 'function') {
                         navigateToNextMilestone();
                     }
-                    this.prefixKey = null;
+                    stateStore.setPrefixKey(null);
                     return 'handled';
                     
                 case '[m':
                     if (typeof navigateToPreviousMilestone === 'function') {
                         navigateToPreviousMilestone();
                     }
-                    this.prefixKey = null;
+                    stateStore.setPrefixKey(null);
                     return 'handled';
                     
                 default:
                     // Unknown sequence, reset
-                    this.prefixKey = null;
+                    stateStore.setPrefixKey(null);
                     break;
             }
         }
@@ -770,7 +773,7 @@ class KeyboardManager {
     // ===================
     
     getCurrentState() {
-        return this.currentState;
+        return stateStore.getKeyboardState();
     }
     
     forceStateUpdate() {
