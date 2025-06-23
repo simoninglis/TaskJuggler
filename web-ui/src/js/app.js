@@ -3,35 +3,58 @@
 
 // Initialize the application
 function initializeApp() {
+    console.log('🚀 Initializing TaskJuggler Web UI...');
+    
+    // Check if gantt is available
+    if (typeof gantt === 'undefined') {
+        console.error('❌ DHTMLX Gantt is not loaded!');
+        return;
+    }
+    
+    // Check if container exists
+    const ganttContainer = document.getElementById('gantt_here');
+    if (!ganttContainer) {
+        console.error('❌ Gantt container #gantt_here not found!');
+        return;
+    }
+    
+    console.log('✅ Prerequisites checked, initializing app...');
+    
     // 1. Initialize DHTMLX Gantt configuration
-    initializeGanttConfig();
+    if (typeof initializeGanttConfig === 'function') {
+        initializeGanttConfig();
+    } else {
+        console.error('❌ initializeGanttConfig not found');
+    }
     
     // 2. Load initial data
-    loadTaskJugglerData();
+    if (typeof loadTaskJugglerData === 'function') {
+        loadTaskJugglerData();
+    } else {
+        console.error('❌ loadTaskJugglerData not found');
+    }
     
     // 3. Keyboard navigation is now handled automatically by KeyboardManager
     
     // 4. Command palette is initialized automatically by custom-command-palette.js
     
     // 5. Initialize mouse wheel zoom
-    initializeMouseWheelZoom();
+    if (typeof initializeMouseWheelZoom === 'function') {
+        initializeMouseWheelZoom();
+    } else {
+        console.error('❌ initializeMouseWheelZoom not found');
+    }
 }
 
 // Start the application when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
+// Check if DOM is already loaded (for ES modules)
+if (document.readyState !== 'loading') {
     initializeApp();
-    
-    // Debug: Check if modules are loaded
-    setTimeout(() => {
-        console.log('=== Module Check ===');
-        console.log('keyboardHelp loaded:', !!window.keyboardHelp);
-        console.log('keyboardManager loaded:', !!window.keyboardManager);
-        console.log('customCommandPalette loaded:', !!window.customCommandPalette);
-        
-        if (window.keyboardManager) {
-            console.log('KeyboardManager state:', window.keyboardManager.getCurrentState());
-            console.log('Global hotkeys size:', window.keyboardManager.globalHotkeys.size);
-            console.log('Global hotkeys:', Array.from(window.keyboardManager.globalHotkeys.keys()));
-        }
-    }, 1000);
-});
+} else {
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+    });
+}
+
+// Export for use in main.js
+export { initializeApp };

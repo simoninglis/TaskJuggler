@@ -1,8 +1,8 @@
 // DHTMLX Gantt Configuration
 // This file contains all initial configuration for the DHTMLX Gantt library
 
-// Initialize DHTMLX Gantt configuration
-function initializeGanttConfig() {
+// Make function available globally for app.js
+window.initializeGanttConfig = function initializeGanttConfig() {
     // Ensure task types are properly defined
     gantt.config.types.task = "task";
     gantt.config.types.project = "project";

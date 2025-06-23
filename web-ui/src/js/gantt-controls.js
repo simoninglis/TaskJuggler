@@ -878,20 +878,39 @@ window.initializeMouseWheelZoom = function initializeMouseWheelZoom() {
     if (!ganttElement) return;
     
     ganttElement.addEventListener('wheel', function(event) {
-        // Only handle vertical scrolling for zoom
-        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-            // Prevent default scrolling behavior for zoom
+        // Check if Ctrl (Windows/Linux) or Cmd (Mac) is pressed
+        const isModifierPressed = event.ctrlKey || event.metaKey;
+        
+        // Only zoom if modifier key is pressed and it's vertical scrolling
+        if (isModifierPressed && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+            // Prevent default scrolling/zooming behavior
             event.preventDefault();
+            event.stopPropagation();
             
             // Determine zoom direction
             if (event.deltaY < 0) {
                 // Scroll up = zoom in
                 zoomIn();
+                updateStatus('Zoomed in');
             } else {
                 // Scroll down = zoom out
                 zoomOut();
+                updateStatus('Zoomed out');
+            }
+            
+            // Log for debugging
+            if (window.debugLog) {
+                window.debugLog('zoom', 'Mouse wheel zoom', {
+                    deltaY: event.deltaY,
+                    currentZoom: stateStore.getZoom()
+                });
             }
         }
-        // For horizontal scrolling, let the browser handle it naturally
+        // Without modifier, let browser handle scrolling naturally
     }, { passive: false });
+    
+    // Log initialization
+    if (window.debugLog) {
+        window.debugLog('info', 'Mouse wheel zoom initialized (Ctrl/Cmd+Scroll)');
+    }
 }

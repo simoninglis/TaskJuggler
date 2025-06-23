@@ -1,15 +1,38 @@
 # TaskJuggler Web UI Server Commands
 
-# Start debug server with WebSocket logging and file output
-debug:
+# Default: Show available commands
+default:
+    @just --list
+
+# Start Vite development server (recommended)
+vite:
+    npm run dev
+
+# Start Vite + WebSocket debug server together
+vite-debug:
+    poetry run python server/serve-with-vite.py 2>&1 | tee /tmp/webui-server.log
+
+# Build for production using Vite
+build:
+    npm run build
+
+# Preview production build
+preview:
+    npm run preview
+
+# Legacy: Start debug server with WebSocket logging
+debug-legacy:
     poetry run python server/serve-with-debug.py 2>&1 | tee /tmp/webui-server.log
 
-# Start auto-reload server with file output
-dev:
+# Start development server (now uses Vite)
+dev: vite
+
+# Legacy: Start auto-reload server
+dev-legacy:
     python3 server/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
 
-# Start standard server with file output
-serve:
+# Legacy: Start standard server
+serve-legacy:
     python3 server/serve.py 2>&1 | tee /tmp/webui-server.log
 
 # View HTTP server logs
@@ -33,11 +56,14 @@ kill-servers:
 # Check if servers are running
 status:
     @echo "Checking for running servers..."
-    @ps aux | grep -E "serve(-with-reload|-with-debug)?\.py" | grep -v grep || echo "No servers running"
-    @echo "\nPort usage:"
-    @lsof -i :8000 || echo "Port 8000: free"
-    @lsof -i :8001 || echo "Port 8001: free"
-    @lsof -i :8002 || echo "Port 8002: free"
+    @echo "\n📦 Vite server:"
+    @ps aux | grep -E "vite|node.*vite" | grep -v grep || echo "  Not running"
+    @echo "\n🐍 Python servers:"
+    @ps aux | grep -E "serve(-with-reload|-with-debug|-with-vite)?\.py" | grep -v grep || echo "  Not running"
+    @echo "\n🔌 Port usage:"
+    @lsof -i :8000 || echo "  Port 8000: free"
+    @lsof -i :8001 || echo "  Port 8001: free (Vite/HTTP)"
+    @lsof -i :8002 || echo "  Port 8002: free (WebSocket debug)"
 
 # Clean up log files
 clean-logs:

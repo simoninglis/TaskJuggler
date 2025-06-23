@@ -127,7 +127,7 @@ async def test_focus_mode():
         
         print(f"Focus on task result: {design_focus}")
         
-        if design_focus['found'] and (design_focus['visible'] || design_focus['selected']):
+        if design_focus['found'] and (design_focus['visible'] or design_focus['selected']):
             print("✓ SUCCESS: Focused on design task")
         else:
             print("✗ FAIL: Did not focus on design task")
@@ -157,7 +157,7 @@ async def test_focus_mode():
         print(f"Selected task: {selected_info}")
         
         # Scroll away from the task
-        await page.keyboard.press('Control+End')  // Go to end
+        await page.keyboard.press('Control+End')  # Go to end
         await page.wait_for_timeout(500)
         
         # Press Shift+F to focus on selection
@@ -166,7 +166,7 @@ async def test_focus_mode():
         await page.keyboard.up('Shift')
         await page.wait_for_timeout(500)
         
-        // Check if view centered on selected task
+        # Check if view centered on selected task
         centered = await page.evaluate('''() => {
             const id = window.gantt ? window.gantt.getSelectedId() : null;
             if (id) {

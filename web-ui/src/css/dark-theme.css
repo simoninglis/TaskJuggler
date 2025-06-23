@@ -169,66 +169,9 @@ h1, h2, h3 {
     color: var(--text-tertiary);
 }
 
-/* Keyboard Help Dark Theme */
-.keyboard-help-overlay {
-    background-color: var(--overlay-bg-dark);
-}
-
-.keyboard-help-modal {
-    background: var(--bg-secondary);
-    box-shadow: 0 20px 60px var(--shadow-lg);
-}
-
-.keyboard-help-header {
-    border-bottom: 1px solid var(--border-primary);
-}
-
-.keyboard-help-header h2 {
-    color: var(--text-primary);
-}
-
-.keyboard-help-close {
-    color: var(--text-tertiary);
-}
-
-.keyboard-help-close:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.keyboard-help-category-title {
-    color: var(--text-primary);
-}
-
-.keyboard-help-item {
-    background-color: var(--bg-tertiary);
-}
-
-.keyboard-help-item:hover {
-    background-color: var(--bg-hover);
-}
-
-.keyboard-help-keys kbd {
-    color: var(--text-primary);
-    background-color: var(--kbd-bg);
-    border: 1px solid var(--kbd-border);
-    box-shadow: 0 1px 0 var(--kbd-shadow);
-}
-
-.keyboard-help-description {
-    color: var(--text-secondary);
-}
-
-.keyboard-help-footer {
-    border-top: 1px solid var(--border-primary);
-    color: var(--text-tertiary);
-}
-
-.keyboard-help-footer kbd {
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--kbd-border);
-}
+/* Keyboard Help Dark Theme - Moved to Web Component */
+/* Dark theme support is now handled via :host-context(.dark-theme) in the component */
+/* See src/js/components/keyboard-help.js */
 
 /* Status section */
 #activeFilters {

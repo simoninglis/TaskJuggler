@@ -1,27 +1,51 @@
 // Data Loading and Conversion
 // This file handles loading TaskJuggler data and converting it to DHTMLX format
 
-// Load TaskJuggler data
-function loadTaskJugglerData() {
-    updateStatus("Loading TaskJuggler data...");
+// Store original data for filtering
+let originalData = null;
+
+// Load TaskJuggler data - make available globally
+window.loadTaskJugglerData = function loadTaskJugglerData() {
+    console.log("🔄 loadTaskJugglerData called");
+    if (typeof updateStatus === 'function') {
+        updateStatus("Loading TaskJuggler data...");
+    }
     
-    fetch('data/sample-gantt.json')
-        .then(response => response.json())
+    const dataUrl = '/data/sample-gantt.json';
+    console.log(`📁 Fetching data from: ${dataUrl}`);
+    
+    fetch(dataUrl)
+        .then(response => {
+            console.log(`📨 Response received: status=${response.status}, ok=${response.ok}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            updateStatus("Converting TaskJuggler data to DHTMLX format...");
-            console.log("Raw data loaded:", data);
+            if (typeof updateStatus === 'function') {
+                updateStatus("Converting TaskJuggler data to DHTMLX format...");
+            }
+            console.log("✅ Raw data loaded:", data);
+            console.log(`📊 Tasks count: ${data.tasks ? data.tasks.length : 0}`);
             
             // Convert TaskJuggler format to DHTMLX format
             const dhtmlxData = convertTaskJugglerToDHMLX(data);
-            console.log("Converted DHTMLX data:", dhtmlxData);
+            console.log("✅ Converted DHTMLX data:", dhtmlxData);
+            console.log(`📊 Converted tasks: ${dhtmlxData.data ? dhtmlxData.data.length : 0}`);
             
             // Store original data for filtering
             originalData = dhtmlxData;
+            window.originalData = dhtmlxData; // Make it globally accessible for debugging
             
             // Load data into gantt
+            console.log("📥 Parsing data into Gantt...");
             gantt.parse(dhtmlxData);
+            console.log("✅ Data parsed into Gantt");
             
-            updateStatus(`Loaded ${data.tasks.length} tasks from TaskJuggler project: ${data.project}`);
+            if (typeof updateStatus === 'function') {
+                updateStatus(`Loaded ${data.tasks.length} tasks from TaskJuggler project: ${data.project}`);
+            }
             
             // Debug milestone presence
             if (window.debugLog) {
@@ -46,26 +70,33 @@ function loadTaskJugglerData() {
             const projectTitleElement = document.getElementById('projectTitle');
             if (projectTitleElement && data.project) {
                 projectTitleElement.textContent = data.project;
+                console.log(`✅ Project title updated to: ${data.project}`);
             }
             
             // Set initial focus to the gantt chart and select first task
             setTimeout(() => {
                 const tasks = gantt.getTaskByTime();
+                console.log(`📊 Final task count in Gantt: ${tasks.length}`);
                 if (tasks.length > 0) {
                     gantt.selectTask(tasks[0].id);
                     gantt.showTask(tasks[0].id);
+                    console.log(`✅ Selected first task: ${tasks[0].text}`);
                 }
                 // Focus the gantt container and ensure it's ready for keyboard nav
                 const ganttContainer = document.getElementById('gantt_here');
-                ganttContainer.focus();
-                
-                // Force DHTMLX to recognize focus
-                gantt.focus();
+                if (ganttContainer) {
+                    ganttContainer.focus();
+                    // Force DHTMLX to recognize focus
+                    gantt.focus();
+                }
             }, 100);
         })
         .catch(error => {
-            console.error('Error loading data:', error);
-            updateStatus("Error loading TaskJuggler data: " + error.message);
+            console.error('❌ Error loading data:', error);
+            console.error('Stack trace:', error.stack);
+            if (typeof updateStatus === 'function') {
+                updateStatus("Error loading TaskJuggler data: " + error.message);
+            }
         });
 }
 

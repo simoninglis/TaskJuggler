@@ -4,10 +4,10 @@
 
 ### High Priority
 
-- [ ] **Mouse Wheel Zoom** - Middle scroll wheel to zoom in/out on timeline
-  - Ctrl+Scroll or Cmd+Scroll for zoom
-  - Zoom centered on mouse position
-  - Smooth zoom transitions
+- [x] **Mouse Wheel Zoom** - Middle scroll wheel to zoom in/out on timeline
+  - Ctrl+Scroll or Cmd+Scroll for zoom (✓ Implemented)
+  - Zoom uses current mouse position (browser handles centering)
+  - Status updates show zoom changes
 
 ### Medium Priority
 
