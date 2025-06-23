@@ -842,6 +842,79 @@ function navigateToPreviousMilestone() {
     }
 }
 
+// Task navigation functions
+function selectNextTask() {
+    const currentId = gantt.getSelectedId();
+    const tasks = gantt.getTaskByTime();
+    
+    console.log('[selectNextTask] Called with currentId:', currentId, 'tasks:', tasks.length);
+    
+    if (tasks.length === 0) return;
+    
+    // All tasks are navigable in order
+    const navigableTasks = tasks;
+    
+    if (!currentId) {
+        // No selection, select first navigable task
+        if (navigableTasks.length > 0) {
+            gantt.selectTask(navigableTasks[0].id);
+            gantt.showTask(navigableTasks[0].id);
+        }
+        return;
+    }
+    
+    // Find current task index in navigable tasks
+    const currentIndex = navigableTasks.findIndex(task => task.id === currentId);
+    
+    if (currentIndex < navigableTasks.length - 1) {
+        // Select next task
+        const nextTask = navigableTasks[currentIndex + 1];
+        gantt.selectTask(nextTask.id);
+        gantt.showTask(nextTask.id);
+    } else if (currentIndex === -1 && navigableTasks.length > 0) {
+        // Current task not in navigable list, select first navigable
+        gantt.selectTask(navigableTasks[0].id);
+        gantt.showTask(navigableTasks[0].id);
+    }
+}
+
+function selectPreviousTask() {
+    const currentId = gantt.getSelectedId();
+    const tasks = gantt.getTaskByTime();
+    
+    if (tasks.length === 0) return;
+    
+    // All tasks are navigable in order
+    const navigableTasks = tasks;
+    
+    if (!currentId) {
+        // No selection, select last navigable task
+        if (navigableTasks.length > 0) {
+            gantt.selectTask(navigableTasks[navigableTasks.length - 1].id);
+            gantt.showTask(navigableTasks[navigableTasks.length - 1].id);
+        }
+        return;
+    }
+    
+    // Find current task index in navigable tasks
+    const currentIndex = navigableTasks.findIndex(task => task.id === currentId);
+    
+    if (currentIndex > 0) {
+        // Select previous task
+        const prevTask = navigableTasks[currentIndex - 1];
+        gantt.selectTask(prevTask.id);
+        gantt.showTask(prevTask.id);
+    } else if (currentIndex === -1 && navigableTasks.length > 0) {
+        // Current task not in navigable list, select last navigable
+        gantt.selectTask(navigableTasks[navigableTasks.length - 1].id);
+        gantt.showTask(navigableTasks[navigableTasks.length - 1].id);
+    }
+}
+
+// Make task navigation functions globally available
+window.selectNextTask = selectNextTask;
+window.selectPreviousTask = selectPreviousTask;
+
 // Make milestone navigation functions globally available
 window.navigateToNextMilestone = navigateToNextMilestone;
 window.navigateToPreviousMilestone = navigateToPreviousMilestone;

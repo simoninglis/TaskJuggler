@@ -255,6 +255,7 @@ The web UI uses Playwright with Python for automated testing. Tests are organize
 ### Test Structure
 ```
 tests/
+├── smoke/             # Quick smoke tests for core functionality
 ├── command_palette/    # Command palette tests
 ├── keyboard/          # Keyboard navigation tests
 ├── integration/       # Integration and feature tests
@@ -279,6 +280,9 @@ scripts/
    # Run all tests
    python scripts/run_tests.py all
    
+   # Run smoke tests (quick verification of core functionality)
+   poetry run pytest tests/smoke/test_smoke_suite.py -v
+   
    # Run specific category
    python scripts/run_tests.py command_palette
    python scripts/run_tests.py keyboard
@@ -288,6 +292,22 @@ scripts/
    # Run individual test file
    poetry run pytest tests/integration/test_milestones.py -v -s
    ```
+
+### Smoke Tests
+
+The smoke test suite (`tests/smoke/test_smoke_suite.py`) provides quick verification of core functionality:
+- Application loads without errors
+- Gantt chart loads with data
+- Keyboard help opens/closes (?)
+- Command palette opens/closes (Ctrl+Shift+P)
+- Theme toggle works
+- Zoom controls work (+/-)
+- Search functionality (/)
+- Navigation keys work (Arrow keys)
+- State store is initialized
+- Mouse wheel zoom works (Ctrl+Scroll)
+
+Run smoke tests in under 30 seconds to verify the web UI is functioning correctly.
 
 ### Writing Tests
 

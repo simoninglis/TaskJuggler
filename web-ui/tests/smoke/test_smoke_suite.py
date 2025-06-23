@@ -21,7 +21,7 @@ class TestSmokeSuite:
         # Verify critical elements are present
         expect(page.locator("#gantt_here")).to_be_visible(timeout=10000)
         expect(page.locator("#status")).to_be_visible()
-        expect(page.locator(".toolbar")).to_be_visible()
+        expect(page.locator(".header")).to_be_visible()
         
         # Check for console errors
         console_errors = []
@@ -94,7 +94,7 @@ class TestSmokeSuite:
         expect(palette).to_be_visible(timeout=3000)
         
         # Verify search input is focused
-        search_input = page.locator(".command-palette-search")
+        search_input = page.locator(".palette-search")
         expect(search_input).to_be_focused()
         
         # Close with Escape
@@ -114,7 +114,7 @@ class TestSmokeSuite:
         
         # Open command palette and search for theme
         page.keyboard.press("Control+Shift+P")
-        page.wait_for_selector(".command-palette-search", state="visible")
+        page.wait_for_selector(".palette-search", state="visible")
         page.keyboard.type("theme")
         time.sleep(0.5)
         
@@ -177,7 +177,7 @@ class TestSmokeSuite:
         time.sleep(0.5)
         
         # Verify results appear
-        results = page.locator(".command-palette-item")
+        results = page.locator(".command-item")
         expect(results.first).to_be_visible()
         
         # Close with Escape
@@ -192,19 +192,66 @@ class TestSmokeSuite:
         page.wait_for_selector("#gantt_here", state="visible")
         time.sleep(1)
         
+        # Capture console messages
+        console_messages = []
+        page.on("console", lambda msg: console_messages.append(f"{msg.type}: {msg.text}"))
+        
         # Focus on gantt
         page.click("#gantt_here")
+        time.sleep(1)  # Give time for modules to load
         
-        # Get initial selected task
-        initial_task = page.evaluate("() => gantt.getSelectedId()")
+        # Expand all tasks to ensure they're visible
+        page.evaluate("() => { if (typeof expandAll === 'function') expandAll(); }")
+        time.sleep(0.5)
+        
+        # Check if selectNextTask is available
+        has_function = page.evaluate("() => typeof window.selectNextTask === 'function'")
+        print(f"selectNextTask function available: {has_function}")
+        
+        # Get all tasks and debug info
+        task_info = page.evaluate("""
+            () => {
+                const tasks = gantt.getTaskByTime();
+                const currentId = gantt.getSelectedId();
+                return {
+                    taskCount: tasks.length,
+                    currentId: currentId,
+                    taskList: tasks.slice(0, 5).map(t => ({id: t.id, text: t.text, parent: t.parent})),
+                    rootId: gantt.config.root_id
+                };
+            }
+        """)
+        print(f"Debug: {task_info}")
+        
+        # Select the first non-root task
+        initial_task = page.evaluate("""
+            () => {
+                const tasks = gantt.getTaskByTime();
+                // Find first task that's not the root project
+                const firstRealTask = tasks.find(t => t.id !== gantt.config.root_id);
+                if (firstRealTask) {
+                    gantt.selectTask(firstRealTask.id);
+                    return firstRealTask.id;
+                }
+                return gantt.getSelectedId();
+            }
+        """)
+        
+        print(f"Initial task selected: {initial_task}")
         
         # Press down arrow
         page.keyboard.press("ArrowDown")
-        time.sleep(0.3)
+        time.sleep(0.5)
         
         # Verify selection changed
         new_task = page.evaluate("() => gantt.getSelectedId()")
-        assert new_task != initial_task, "Task selection did not change"
+        print(f"New task after ArrowDown: {new_task}")
+        
+        # Print console messages for debugging
+        for msg in console_messages:
+            print(f"Console: {msg}")
+        
+        assert new_task != initial_task, f"Task selection did not change: {initial_task} -> {new_task}"
         
         # Press up arrow
         page.keyboard.press("ArrowUp")
