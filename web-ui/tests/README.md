@@ -9,20 +9,22 @@ This directory contains all automated tests for the TaskJuggler Web UI, organize
   - Search mode, go mode, focus mode
   - Command execution and keyboard navigation
 - **keyboard/** - Tests for keyboard navigation and shortcuts
-  - Arrow key navigation
+  - Arrow key navigation, comprehensive keyboard tests
   - Zoom shortcuts (+/-, mouse wheel)
   - VIM-like navigation (g, F, /, ?, etc.)
 - **integration/** - Full UI integration tests
-  - Theme toggling, layout management
+  - **theme/** - Theme toggling and theme management
   - Data loading and Gantt chart functionality
   - Mouse wheel zoom, Enter key behavior
-- **misc/** - Standalone component and edge case tests
-  - Web component functionality
-  - Error handling and debugging
+  - App initialization and error handling
+- **components/** - Web Component tests
+  - Lit component functionality (keyboard-help, theme-manager)
+  - Component isolation and API testing
 - **helpers/** - Shared test utilities and helper functions
-- **scripts/** - Test execution scripts and utilities
+- **scripts/** - Test execution scripts and utilities  
 - **debug/** - Debug-specific test files
 - **documentation/** - Test-related documentation
+- **archived/** - Archived debug and variant test files
 
 ## Running Tests
 
@@ -48,7 +50,7 @@ python scripts/run_tests.py all
 python scripts/run_tests.py command_palette
 python scripts/run_tests.py keyboard
 python scripts/run_tests.py integration
-python scripts/run_tests.py misc
+python scripts/run_tests.py components
 ```
 
 ### Run individual test:
@@ -94,7 +96,7 @@ def test_feature_name(page: Page):
 ## Adding New Tests
 
 1. **Choose appropriate directory** based on functionality:
-   - UI component behavior → **misc/**
+   - Web Component behavior → **components/**
    - Keyboard interactions → **keyboard/**
    - Command palette features → **command_palette/**
    - Complex workflows → **integration/**
