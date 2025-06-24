@@ -10,21 +10,17 @@ project json_example "JSON Export Example" 2025-01-01 +3m {
 }
 
 # Define resources
-resource team "Development Team" {
-  resource dev1 "Alice Smith" {
-    email "alice@example.com"
-    rate 75.0
-  }
-  resource dev2 "Bob Jones" {
-    email "bob@example.com" 
-    rate 65.0
-  }
+resource dev1 "Alice Smith" {
+  email "alice@example.com"
+  rate 75.0
+}
+resource dev2 "Bob Jones" {
+  email "bob@example.com" 
+  rate 65.0
 }
 
 # Define cost accounts
-account costs "Project Costs" {
-  account dev "Development" 
-}
+account dev_costs "Development Costs"
 
 # Define tasks
 task project "Web Application" {
@@ -43,16 +39,16 @@ task project "Web Application" {
       effort 10d
       allocate dev2
       complete 50
+      chargeset dev_costs
       charge 6500 onend
-      account costs.dev
     }
     
     task frontend "Frontend Development" {
       effort 15d
       allocate dev1
-      depends !!backend
+      depends !backend
+      chargeset dev_costs
       charge 11250 onend
-      account costs.dev
     }
   }
   
@@ -60,7 +56,6 @@ task project "Web Application" {
     depends !development
     effort 8d
     allocate dev1, dev2
-    milestone
   }
 }
 

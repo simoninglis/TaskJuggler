@@ -11,7 +11,7 @@ window.loadTaskJugglerData = function loadTaskJugglerData() {
         updateStatus("Loading TaskJuggler data...");
     }
     
-    const dataUrl = '/data/sample-gantt.json';
+    const dataUrl = '/data/test-json-export.json';
     console.log(`📁 Fetching data from: ${dataUrl}`);
     
     fetch(dataUrl)
@@ -161,8 +161,7 @@ function convertComprehensiveFormat(tjData) {
             responsible: scenario.responsible,
             allocations: task.allocations || [],
             flags: scenario.flags || [],
-            note: scenario.note,
-            wbs: task.wbs
+            note: scenario.note
         };
         
         tasks.push(dhtmlxTask);
