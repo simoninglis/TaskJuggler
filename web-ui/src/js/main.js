@@ -48,6 +48,9 @@ async function loadModulesAfterGantt() {
         console.log('⏳ Loading app.js...');
         const appModule = await import('./app.js');
         
+        console.log('⏳ Loading data-watcher...');
+        const { dataWatcher } = await import('./data-watcher.js');
+        
         console.log('✅ All modules loaded successfully');
         
         // Initialize gantt after modules are loaded
@@ -61,6 +64,10 @@ async function loadModulesAfterGantt() {
         } else {
             console.error('❌ initializeApp not found in app module');
         }
+        
+        // Start watching for data changes
+        console.log('⏳ Starting data watcher...');
+        dataWatcher.start();
         
     } catch (error) {
         console.error('❌ Failed to load modules:', error);

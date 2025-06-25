@@ -11,7 +11,7 @@ window.loadTaskJugglerData = function loadTaskJugglerData() {
         updateStatus("Loading TaskJuggler data...");
     }
     
-    const dataUrl = '/data/test-json-export.json';
+    const dataUrl = '/data/web-ui-demo.json';
     console.log(`📁 Fetching data from: ${dataUrl}`);
     
     fetch(dataUrl)
