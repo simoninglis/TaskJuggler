@@ -3,6 +3,7 @@
 
 // Import state store
 import stateStore from './stateStore.js';
+import { KEYBOARD, SEARCH, GANTT } from './config.js';
 
 // Local variables (not part of global state)
 let searchTimeout = null;
@@ -75,7 +76,7 @@ function debounceSearch() {
     searchTimeout = setTimeout(() => {
         const searchTerm = document.getElementById('searchInput').value.trim();
         filterTasks(searchTerm, false); // false = don't focus
-    }, 300); // 300ms delay for debouncing
+    }, SEARCH.DEBOUNCE_DELAY);
 }
 
 function filterTasks(searchTerm, focusFirstMatch = false) {
@@ -149,7 +150,7 @@ function filterTasks(searchTerm, focusFirstMatch = false) {
             gantt.selectTask(firstMatchId);
             gantt.showTask(firstMatchId);
             document.getElementById('gantt_here').focus();
-        }, 100);
+        }, SEARCH.FOCUS_DELAY);
     }
     
     stateStore.set('isFiltered', true);
@@ -242,28 +243,28 @@ function setZoom(zoom) {
                 {unit: "day", step: 1, format: "%d %M"},
                 {unit: "hour", step: 1, format: "%H:%i"}
             ];
-            gantt.config.min_column_width = 30;
+            gantt.config.min_column_width = GANTT.MIN_COLUMN_WIDTH.hour;
             break;
         case "day":
             gantt.config.scales = [
                 {unit: "month", step: 1, format: "%F %Y"},
                 {unit: "day", step: 1, format: "%d %M"}
             ];
-            gantt.config.min_column_width = 60;
+            gantt.config.min_column_width = GANTT.MIN_COLUMN_WIDTH.day;
             break;
         case "week":
             gantt.config.scales = [
                 {unit: "week", step: 1, format: "Week #%W"},
                 {unit: "day", step: 1, format: "%d"}
             ];
-            gantt.config.min_column_width = 60;
+            gantt.config.min_column_width = GANTT.MIN_COLUMN_WIDTH.week;
             break;
         case "month":
             gantt.config.scales = [
                 {unit: "month", step: 1, format: "%F %Y"},
                 {unit: "week", step: 1, format: "#%W"}
             ];
-            gantt.config.min_column_width = 120;
+            gantt.config.min_column_width = GANTT.MIN_COLUMN_WIDTH.month;
             break;
         case "quarter":
             gantt.config.scales = [
@@ -273,7 +274,7 @@ function setZoom(zoom) {
                 }},
                 {unit: "month", step: 1, format: "%M"}
             ];
-            gantt.config.min_column_width = 90;
+            gantt.config.min_column_width = GANTT.MIN_COLUMN_WIDTH.quarter;
             break;
         case "year":
             gantt.config.scales = [
@@ -283,7 +284,7 @@ function setZoom(zoom) {
                     return "Q" + quarter;
                 }}
             ];
-            gantt.config.min_column_width = 50;
+            gantt.config.min_column_width = GANTT.MIN_COLUMN_WIDTH.year;
             break;
     }
     gantt.render();
@@ -336,9 +337,9 @@ function calculateScrollAmount() {
     const startPos = gantt.posFromDate(minDate);
     const nextPos = gantt.posFromDate(nextDate);
     const scrollAmount = Math.abs(nextPos - startPos);
-    
+
     // Ensure minimum scroll amount
-    return Math.max(scrollAmount, 10);
+    return Math.max(scrollAmount, KEYBOARD.MIN_SCROLL_AMOUNT);
 }
 
 function toggleGrid() {
