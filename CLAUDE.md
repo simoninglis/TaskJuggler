@@ -46,10 +46,49 @@ TaskJuggler uses a scanner/parser architecture:
 - **Core**: Project scheduling and resource management engine
 
 ## Development
+
+### Requirements
 - Ruby 3.4+ required
 - Follow existing code patterns and conventions
-- All changes must pass full test suite: `rake test`
+- All changes must pass full test suite: `rake test` (184 tests)
 - See `test/CLAUDE.md` for detailed testing guidelines
+
+### Claude Code Agents
+
+This project uses specialized Claude Code agents for development workflows. **Restart Claude Code after setup to load agents.**
+
+**Available Agents** (in `.claude/agents/`):
+
+1. **architect-planner** - Plans features, designs architecture, creates implementation plans
+   - Use BEFORE implementing features
+   - Invocation: Mention "plan", "architect", or "design"
+   - See `.claude/agents/README.md` for details
+
+2. **test-runner** - Writes and runs tests, ensures coverage
+   - Use for ALL testing activities
+   - Invocation: Mention "test", "testing", or "coverage"
+   - Knows RSpec 3.x syntax and Test::Unit patterns
+
+3. **code-reviewer** - Reviews code using OpenAI Codex for external validation
+   - Use before commits and for second opinions
+   - Invocation: Mention "review", "codex", or "validate"
+   - Requires: `codex` CLI tool installed
+
+4. **release-coordinator** - Manages GitFlow merges with 5-layer validation
+   - Use when merging feature branches to dev
+   - Invocation: Mention "merge PR" or "merge to develop"
+   - Validates: CHANGELOG, tests, code quality, documentation
+
+**Complete Development Workflow:**
+```
+Plan (architect-planner) →
+Implement (dev) →
+Test (test-runner) →
+Review (code-reviewer) →
+Merge (release-coordinator)
+```
+
+**See `.claude/agents/README.md` for detailed agent documentation and examples.**
 
 ## Key Files
 - **Main entry point**: `bin/tj3` (command-line interface)

@@ -1,41 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git remote add:*)",
-      "Bash(git fetch:*)",
-      "Bash(git checkout:*)",
-      "Bash(git merge:*)",
-      "Bash(git branch:*)",
-      "Bash(git commit:*)",
-      "Bash(./install-local.sh:*)",
-      "Bash(ruby --version)",
-      "Bash(tj3:*)",
-      "Bash(gem install:*)",
-      "Bash(gem list:*)",
-      "Bash(git pull:*)",
-      "Bash(python3:*)",
-      "Bash(poetry install:*)",
-      "Bash(curl:*)",
-      "Bash(git restore:*)",
-      "Bash(git stash:*)",
-      "Bash(poetry --version)",
-      "Bash(poetry install:*)",
-      "Bash(npm init:*)",
-      "Bash(poetry add:*)",
-      "Bash(poetry run:*)",
-      "Bash(git reset:*)",
-      "Bash(cat:*)",
-      "Bash(rg:*)",
-      "Bash(mkdir:*)",
-      "Bash(mv:*)",
-      "Bash(python run_tests.py:*)",
-      "Bash(npm install:*)",
-      "Bash(rake test:*)",
-      "Bash(rm:*)",
-      "Bash(npm test:*)",
-      "Bash(poetry lock:*)",
-      "WebFetch(domain:docs.dhtmlx.com)"
+      "Bash(npm run test:*)",
+      "Bash(python:*)",
+      "Bash(git -C /home/singlis/work/TaskJuggler/web-ui branch:*)",
+      "Bash(git -C /home/singlis/work/TaskJuggler/web-ui log --oneline --graph --all --decorate -20)",
+      "Bash(git -C /home/singlis/work/TaskJuggler/web-ui remote:*)",
+      "Bash(git -C /home/singlis/work/TaskJuggler/web-ui log --oneline dev -10)",
+      "Bash(git -C /home/singlis/work/TaskJuggler/web-ui log --oneline --graph feature/dhtmlx-gantt-prototype...dev)"
     ],
-    "deny": []
+    "deny": [],
+    "ask": []
   }
 }
