@@ -1,0 +1,137 @@
+project negative_charges "Negative Charges Test" "1.0" 2025-01-01-00:00-+0000 - 2025-01-31-10:00-+0000 {
+  timezone "Europe/Berlin"
+  scenario plan "Plan Scenario" {
+    active yes
+  }
+}
+
+projectids negative_charges
+
+resource developer "Developer"
+resource consultant "Consultant"
+
+task project "Project with Discounts" {
+  task development "Development Work" {
+    start 2025-01-02-08:00-+0000
+    end 2025-01-15-16:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task discount_applied "Volume Discount" {
+    depends project.development
+    start 2025-01-15-16:00-+0000
+    scheduled
+  }
+  task consulting "Consulting Work" {
+    depends project.development
+    start 2025-01-16-08:00-+0000
+    end 2025-01-22-16:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task multiple_negatives "Multiple Negative Charges" {
+    start 2025-01-19-23:00-+0000
+    end 2025-01-24-23:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task mixed_charges "Mixed Positive and Negative" {
+    start 2025-01-24-23:00-+0000
+    end 2025-01-27-23:00-+0000
+    scheduling asap
+    scheduled
+  }
+}
+task edge_cases "Charge Edge Cases" {
+  task large_negative "Large Negative Charge" {
+    start 2025-01-14-23:00-+0000
+    end 2025-01-15-23:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task small_negative "Small Negative Charge" {
+    start 2025-01-14-23:00-+0000
+    end 2025-01-15-23:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task zero_charge "Zero Charge" {
+    start 2025-01-14-23:00-+0000
+    end 2025-01-15-23:00-+0000
+    scheduling asap
+    scheduled
+  }
+}
+supplement task project {
+  priority 500
+  projectid negative_charges
+}
+supplement task project.development {
+  booking developer 2025-01-02-08:00-+0000 + 8.0h,
+          2025-01-03-08:00-+0000 + 8.0h,
+          2025-01-06-08:00-+0000 + 8.0h,
+          2025-01-07-08:00-+0000 + 8.0h,
+          2025-01-08-08:00-+0000 + 8.0h,
+          2025-01-09-08:00-+0000 + 8.0h,
+          2025-01-10-08:00-+0000 + 8.0h,
+          2025-01-13-08:00-+0000 + 8.0h,
+          2025-01-14-08:00-+0000 + 8.0h,
+          2025-01-15-08:00-+0000 + 8.0h { overtime 2 }
+  priority 500
+  projectid negative_charges
+}
+supplement task project.discount_applied {
+  priority 500
+  projectid negative_charges
+}
+supplement task project.consulting {
+  booking consultant 2025-01-16-08:00-+0000 + 8.0h,
+          2025-01-17-08:00-+0000 + 8.0h,
+          2025-01-20-08:00-+0000 + 8.0h,
+          2025-01-21-08:00-+0000 + 8.0h,
+          2025-01-22-08:00-+0000 + 8.0h { overtime 2 }
+  priority 500
+  projectid negative_charges
+}
+supplement task project.multiple_negatives {
+  priority 500
+  projectid negative_charges
+}
+supplement task project.mixed_charges {
+  priority 500
+  projectid negative_charges
+}
+supplement task edge_cases {
+  priority 500
+  projectid negative_charges
+}
+supplement task edge_cases.large_negative {
+  priority 500
+  projectid negative_charges
+}
+supplement task edge_cases.small_negative {
+  priority 500
+  projectid negative_charges
+}
+supplement task edge_cases.zero_charge {
+  priority 500
+  projectid negative_charges
+}
+supplement resource developer {
+  workinghours sun off
+               workinghours mon 9:00 - 17:00
+               workinghours tue 9:00 - 17:00
+               workinghours wed 9:00 - 17:00
+               workinghours thu 9:00 - 17:00
+               workinghours fri 9:00 - 17:00
+               workinghours sat off
+}
+supplement resource consultant {
+  workinghours sun off
+               workinghours mon 9:00 - 17:00
+               workinghours tue 9:00 - 17:00
+               workinghours wed 9:00 - 17:00
+               workinghours thu 9:00 - 17:00
+               workinghours fri 9:00 - 17:00
+               workinghours sat off
+}

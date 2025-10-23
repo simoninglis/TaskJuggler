@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "generated": "2025-10-23-06:24:02-+0000",
+  "generator": "TaskJuggler 3.8.1-DEV",
+  "project": {
+    "id": "test",
+    "name": "Test Project",
+    "version": "1.0",
+    "start": "2025-01-01",
+    "end": "2025-01-31",
+    "now": "2025-10-23",
+    "timezone": "UTC",
+    "currency": "USD"
+  },
+  "scenarios": [
+    {
+      "id": "plan",
+      "name": "Plan Scenario",
+      "enabled": true,
+      "baseline": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "dummy",
+      "name": "Dummy Task",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-02",
+          "end": "2025-01-03",
+          "duration": 24,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+
+      ],
+      "parent": null,
+      "dependencies": [
+
+      ]
+    }
+  ],
+  "resources": [
+
+  ],
+  "accounts": [
+    {
+      "id": "testing",
+      "name": "Testing Account",
+      "type": "cost",
+      "children": [
+
+      ],
+      "parent": null,
+      "scenarios": {
+        "plan": {
+          "balance": 50.0,
+          "credits": [
+            {
+              "date": "2025-01-02",
+              "amount": 100.0,
+              "description": "Positive amount"
+            },
+            {
+              "date": "2025-01-05",
+              "amount": 0.0,
+              "description": "Zero amount"
+            }
+          ],
+          "debits": [
+            {
+              "date": "2025-01-10",
+              "amount": 50.0,
+              "description": "Negative amount"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

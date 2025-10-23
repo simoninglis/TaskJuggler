@@ -1,0 +1,20 @@
+project negative_credits "Negative Credits Test" "1.0" 2025-01-01-00:00-+0000 - 2025-03-02-20:00-+0000 {
+  timezone "Europe/Berlin"
+  scenario plan "Plan Scenario" {
+    active yes
+  }
+}
+
+projectids negative_credits
+
+
+task project "Project" {
+  start 2025-01-01-23:00-+0000
+  end 2025-01-31-23:00-+0000
+  scheduling asap
+  scheduled
+}
+supplement task project {
+  priority 500
+  projectid negative_credits
+}

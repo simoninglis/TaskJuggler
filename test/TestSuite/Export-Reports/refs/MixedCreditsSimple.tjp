@@ -1,0 +1,93 @@
+project mixed_credits "Mixed Credits and Charges Test" "1.0" 2025-01-01-00:00-+0000 - 2025-03-02-20:00-+0000 {
+  timezone "Europe/Berlin"
+  scenario plan "Plan Scenario" {
+    active yes
+  }
+}
+
+projectids mixed_credits
+
+resource senior "Senior Dev"
+resource junior "Junior Dev"
+
+task project "Mixed Credits Project" {
+  task phase1 "Phase 1 - Regular Work" {
+    start 2025-01-02-08:00-+0000
+    end 2025-01-22-16:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task phase2 "Phase 2 - Discounted Work" {
+    depends project.phase1
+    start 2025-01-23-08:00-+0000
+    end 2025-02-05-16:00-+0000
+    scheduling asap
+    scheduled
+  }
+  task adjustment "Financial Adjustment" {
+    depends project.phase2
+    start 2025-02-05-16:00-+0000
+    end 2025-02-06-16:00-+0000
+    scheduling asap
+    scheduled
+  }
+}
+supplement task project {
+  priority 500
+  projectid mixed_credits
+}
+supplement task project.phase1 {
+  booking senior 2025-01-02-08:00-+0000 + 8.0h,
+          2025-01-03-08:00-+0000 + 8.0h,
+          2025-01-06-08:00-+0000 + 8.0h,
+          2025-01-07-08:00-+0000 + 8.0h,
+          2025-01-08-08:00-+0000 + 8.0h,
+          2025-01-09-08:00-+0000 + 8.0h,
+          2025-01-10-08:00-+0000 + 8.0h,
+          2025-01-13-08:00-+0000 + 8.0h,
+          2025-01-14-08:00-+0000 + 8.0h,
+          2025-01-15-08:00-+0000 + 8.0h,
+          2025-01-16-08:00-+0000 + 8.0h,
+          2025-01-17-08:00-+0000 + 8.0h,
+          2025-01-20-08:00-+0000 + 8.0h,
+          2025-01-21-08:00-+0000 + 8.0h,
+          2025-01-22-08:00-+0000 + 8.0h { overtime 2 }
+  priority 500
+  projectid mixed_credits
+}
+supplement task project.phase2 {
+  booking junior 2025-01-23-08:00-+0000 + 8.0h,
+          2025-01-24-08:00-+0000 + 8.0h,
+          2025-01-27-08:00-+0000 + 8.0h,
+          2025-01-28-08:00-+0000 + 8.0h,
+          2025-01-29-08:00-+0000 + 8.0h,
+          2025-01-30-08:00-+0000 + 8.0h,
+          2025-01-31-08:00-+0000 + 8.0h,
+          2025-02-03-08:00-+0000 + 8.0h,
+          2025-02-04-08:00-+0000 + 8.0h,
+          2025-02-05-08:00-+0000 + 8.0h { overtime 2 }
+  priority 500
+  projectid mixed_credits
+}
+supplement task project.adjustment {
+  priority 500
+  projectid mixed_credits
+}
+supplement resource senior {
+  workinghours sun off
+               workinghours mon 9:00 - 17:00
+               workinghours tue 9:00 - 17:00
+               workinghours wed 9:00 - 17:00
+               workinghours thu 9:00 - 17:00
+               workinghours fri 9:00 - 17:00
+               workinghours sat off
+}
+supplement resource junior {
+  workinghours sun off
+               workinghours mon 9:00 - 17:00
+               workinghours tue 9:00 - 17:00
+               workinghours wed 9:00 - 17:00
+               workinghours thu 9:00 - 17:00
+               workinghours fri 9:00 - 17:00
+               workinghours sat off
+}
