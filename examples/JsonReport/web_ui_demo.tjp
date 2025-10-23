@@ -1,0 +1,206 @@
+project web_ui_demo "Web Application Development" 2025-01-01 +4m {
+  timezone "UTC"
+  currency "USD"
+  now 2025-01-27  # Testing auto-refresh - moved 2 days forward
+}
+
+# Define resources
+resource frontend "Frontend Developer" {
+  email "frontend@example.com"
+  rate 150.0
+}
+
+resource backend "Backend Developer" {
+  email "backend@example.com"
+  rate 150.0
+}
+
+resource ux "UX Designer" {
+  email "ux@example.com"
+  rate 120.0
+}
+
+resource qa "QA Engineer" {
+  email "qa@example.com"
+  rate 100.0
+}
+
+resource devops "DevOps Engineer" {
+  email "devops@example.com"
+  rate 140.0
+}
+
+# Main project task
+task project "Web Application Project" {
+  
+  # Planning Phase
+  task planning "Planning Phase" {
+    start ${projectstart}
+    
+    task requirements "Requirements Gathering" {
+      effort 5d
+      allocate ux
+      complete 100
+    }
+    
+    task design "System Design" {
+      effort 10d
+      allocate frontend, backend
+      depends !requirements
+      complete 100
+    }
+    
+    task planning_milestone "Planning Complete" {
+      milestone
+      depends !design
+    }
+  }
+  
+  # Development Phase
+  task development "Development Phase" {
+    depends !planning.planning_milestone
+    
+    task setup "Environment Setup" {
+      effort 3d
+      allocate devops
+      complete 100
+    }
+    
+    task backend_dev "Backend Development" {
+      
+      task api_core "API Core" {
+        effort 10d
+        allocate backend
+        depends !!setup
+        complete 100  # Completed!
+      }
+      
+      task database "Database Schema" {
+        effort 5d
+        allocate backend
+        depends !api_core
+        complete 90  # Almost done
+      }
+      
+      task auth "Authentication System" {
+        effort 8d
+        allocate backend
+        depends !api_core
+        complete 75  # Good progress
+      }
+      
+      task api_testing "API Testing" {
+        effort 3d
+        allocate backend
+        depends !auth
+        complete 20  # Just started
+      }
+    }
+    
+    task frontend_dev "Frontend Development" {
+      
+      task ui_framework "UI Framework Setup" {
+        effort 3d
+        allocate frontend
+        depends !!setup
+        complete 100
+      }
+      
+      task components "Component Library" {
+        effort 10d
+        allocate frontend
+        depends !ui_framework
+        complete 100  # COMPLETED during auto-refresh test!
+      }
+      
+      task pages "Application Pages" {
+        effort 15d
+        allocate frontend
+        depends !components
+        complete 65  # Good progress in auto-refresh test!
+      }
+      
+      task responsive "Responsive Design" {
+        effort 5d
+        allocate frontend, ux
+        depends !pages
+        complete 10  # New task just started
+      }
+    }
+    
+    task integration "Integration" {
+      effort 5d
+      allocate frontend, backend
+      depends !backend_dev.api_testing, !frontend_dev.responsive
+      complete 0
+    }
+    
+    task critical_fixes "Critical Bug Fixes" {
+      effort 3d
+      allocate frontend, backend, qa
+      priority 900  # High priority!
+      depends !backend_dev.database
+      complete 50  # Urgent work in progress
+    }
+  }
+  
+  # Testing Phase
+  task testing "Testing Phase" {
+    
+    task unit_tests "Unit Testing" {
+      effort 5d
+      allocate qa
+      depends !!development.backend_dev.database
+      complete 30
+    }
+    
+    task integration_tests "Integration Testing" {
+      effort 8d
+      allocate qa
+      depends !!development.integration
+      complete 0
+    }
+    
+    task uat "User Acceptance Testing" {
+      effort 5d
+      allocate qa, ux
+      depends !integration_tests
+      complete 0
+    }
+  }
+  
+  # Deployment Phase
+  task deployment "Deployment" {
+    
+    task security_audit "Security Audit" {
+      effort 3d
+      allocate devops, backend
+      depends !!testing.integration_tests
+      complete 0
+    }
+    
+    task staging "Staging Deployment" {
+      effort 2d
+      allocate devops
+      depends !security_audit
+      complete 0
+    }
+    
+    task production "Production Deployment" {
+      milestone
+      depends !staging, !!testing.uat
+    }
+  }
+  
+  # New milestone
+  task beta_release "Beta Release" {
+    milestone
+    depends !testing.integration_tests
+    note "Major milestone: Beta version ready for selected users"
+  }
+}
+
+# JSON Export
+jsonreport web_ui_data "web_ui_demo_data.json" {
+  formats json
+}

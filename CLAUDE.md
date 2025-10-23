@@ -7,6 +7,18 @@ License: GPL v2
 
 For development workflow and contribution guidelines, see WORKFLOW.md.
 
+## Design Guidelines
+
+### Web UI - VIM-Like Navigation
+The web UI follows VIM-inspired keyboard navigation principles:
+- Modal operation (different modes for different tasks)
+- Single-key commands for common operations
+- Mnemonic key choices (/ for search, ? for help, F for focus)
+- Minimal modifier keys required
+- Consistent escape to exit modes
+
+This makes the UI efficient for keyboard users and maintains consistency with developer tools.
+
 ## Current Work
 
 ### ✅ Completed Features
@@ -15,11 +27,17 @@ For development workflow and contribution guidelines, see WORKFLOW.md.
 - **Test Infrastructure**: All 184 tests now passing (116 unit + 68 RSpec)
 - **TJP Include Support**: Fixed restriction that prevented .tjp files from including other .tjp files (now both .tjp and .tji extensions are allowed)
 - **Version Identifier**: Changed version to 3.8.1-DEV to clearly indicate this is a development fork
+- **JSON Export**: Added comprehensive JSON export format for web UI integration with full project data export
 
 ### Implementation Details
 - **Grammar-level approach**: Uses `optionalMinus` pattern for clean separation
 - **Backward compatible**: All existing functionality preserved
 - **New syntax**: `credits 2025-01-02 "Refund" - 500.0` and `charge - 100.0 onend`
+- **JSON Export**: New `jsonreport` type generates comprehensive project data following JSON specification v1.0
+  - Includes tasks, resources, dependencies, costs, and project metadata
+  - Supports multiple scenarios
+  - Enhanced GanttChart JSON output for task reports
+  - See `docs/JSON_GANTT_SPECIFICATION.md` for format details
 
 ## Architecture
 TaskJuggler uses a scanner/parser architecture:
@@ -28,10 +46,49 @@ TaskJuggler uses a scanner/parser architecture:
 - **Core**: Project scheduling and resource management engine
 
 ## Development
+
+### Requirements
 - Ruby 3.4+ required
 - Follow existing code patterns and conventions
-- All changes must pass full test suite: `rake test`
+- All changes must pass full test suite: `rake test` (184 tests)
 - See `test/CLAUDE.md` for detailed testing guidelines
+
+### Claude Code Agents
+
+This project uses specialized Claude Code agents for development workflows. **Restart Claude Code after setup to load agents.**
+
+**Available Agents** (in `.claude/agents/`):
+
+1. **architect-planner** - Plans features, designs architecture, creates implementation plans
+   - Use BEFORE implementing features
+   - Invocation: Mention "plan", "architect", or "design"
+   - See `.claude/agents/README.md` for details
+
+2. **test-runner** - Writes and runs tests, ensures coverage
+   - Use for ALL testing activities
+   - Invocation: Mention "test", "testing", or "coverage"
+   - Knows RSpec 3.x syntax and Test::Unit patterns
+
+3. **code-reviewer** - Reviews code using OpenAI Codex for external validation
+   - Use before commits and for second opinions
+   - Invocation: Mention "review", "codex", or "validate"
+   - Requires: `codex` CLI tool installed
+
+4. **release-coordinator** - Manages GitFlow merges with 5-layer validation
+   - Use when merging feature branches to dev
+   - Invocation: Mention "merge PR" or "merge to develop"
+   - Validates: CHANGELOG, tests, code quality, documentation
+
+**Complete Development Workflow:**
+```
+Plan (architect-planner) →
+Implement (dev) →
+Test (test-runner) →
+Review (code-reviewer) →
+Merge (release-coordinator)
+```
+
+**See `.claude/agents/README.md` for detailed agent documentation and examples.**
 
 ## Key Files
 - **Main entry point**: `bin/tj3` (command-line interface)
@@ -79,6 +136,14 @@ tj3man-enhanced account            # View manual for 'account' property
 
 # Test negative numbers example
 tj3 test_negative_example.tjp --no-reports
+
+# Generate JSON export for web UI
+tj3 project.tjp  # Generates project_data.json if jsonreport is defined
+
+# Example JSON report in .tjp file:
+# jsonreport "project_export" {
+#   formats json
+# }
 
 # Development/Testing
 rake test                          # Run all tests

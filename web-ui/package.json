@@ -1,0 +1,30 @@
+{
+  "name": "web-ui",
+  "version": "1.0.0",
+  "description": "This directory contains a prototype for a modern, interactive Gantt chart interface using DHTMLX Gantt library.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dhtmlx-gantt": "^9.0.12",
+    "dompurify": "^3.3.0",
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^20.0.8",
+    "jsdom": "^27.0.1",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

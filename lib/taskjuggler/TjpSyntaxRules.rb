@@ -1209,6 +1209,71 @@ EOT
     })
   end
 
+  def rule_jsonReport
+    pattern(%w( !jsonReportHeader !reportBody ), lambda {
+      @property = @property.parent
+    })
+    doc('jsonreport', <<'EOT'
+The JSON report generates a comprehensive data file containing all project
+information in JSON format. This format is designed for consumption by web-based
+Gantt chart viewers and other external tools that need access to the full
+project data.
+
+The JSON format follows the TaskJuggler JSON specification v1.0 and includes:
+- Complete task hierarchy with scheduling results
+- Resource allocations and availability
+- Dependencies with type information
+- Financial data from accounts
+- Multiple scenario support
+- Project metadata and configuration
+
+This report type is ideal for creating interactive web-based dashboards and
+integrating TaskJuggler with modern web frameworks.
+EOT
+       )
+    example('JsonReport')
+  end
+
+  def rule_jsonReportHeader
+    pattern(%w( _jsonreport !optionalID $STRING ), lambda {
+      newReport(@val[1], @val[2], :jsonreport, @sourceFileInfo[0]) do
+        unless @property.modified?('formats')
+          @property.set('formats', [ :json ])
+        end
+
+        # By default, we export all active scenarios.
+        unless @property.modified?('scenarios')
+          scenarios = Array.new(@project.scenarios.items) { |i| i }
+          scenarios.delete_if { |sc| !@project.scenario(sc).get('active') }
+          @property.set('scenarios', scenarios)
+        end
+        
+        # Show all tasks by default
+        unless @property.modified?('hideTask')
+          @property.set('hideTask',
+                        LogicalExpression.new(LogicalOperation.new(0)))
+        end
+        unless @property.modified?('sortTasks')
+          @property.set('sortTasks', [ [ 'tree', true, -1 ] ])
+        end
+        
+        # Show all resources by default
+        unless @property.modified?('hideResource')
+          @property.set('hideResource',
+                        LogicalExpression.new(LogicalOperation.new(0)))
+        end
+        unless @property.modified?('sortResources')
+          @property.set('sortResources', [ [ 'tree', true, -1 ] ])
+        end
+      end
+    })
+    arg(2, 'file name', <<'EOT'
+The name of the JSON file to generate. It must end with a .json extension,
+or use . to write to the standard output channel.
+EOT
+       )
+  end
+
   def rule_exportHeader
     pattern(%w( _export !optionalID $STRING ), lambda {
       newReport(@val[1], @val[2], :export, @sourceFileInfo[0]) do
@@ -3149,6 +3214,11 @@ EOT
       :niku
     })
     descr('Generate an XOG XML file to be used with Clarity.')
+
+    pattern(%w( _json ), lambda {
+      :json
+    })
+    descr('Generate a JSON file for web-based interactive charts.')
   end
 
   def rule_outputFormats
@@ -3771,6 +3841,7 @@ EOT
   def rule_reports
     pattern(%w( !accountReport ))
     pattern(%w( !export ))
+    pattern(%w( !jsonReport ))
     pattern(%w( !resourceReport ))
     pattern(%w( !taskReport ))
     pattern(%w( !textReport ))

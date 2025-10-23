@@ -1,0 +1,90 @@
+# TaskJuggler Web UI Server Commands
+
+# Default: Show available commands
+default:
+    @just --list
+
+# Start Vite development server (recommended)
+vite:
+    npm run dev
+
+# Start Vite + WebSocket debug server together
+vite-debug:
+    poetry run python server/serve-with-vite.py 2>&1 | tee /tmp/webui-server.log
+
+# Build for production using Vite
+build:
+    npm run build
+
+# Preview production build
+preview:
+    npm run preview
+
+# Legacy: Start debug server with WebSocket logging
+debug-legacy:
+    poetry run python server/serve-with-debug.py 2>&1 | tee /tmp/webui-server.log
+
+# Start development server (now uses Vite)
+dev: vite
+
+# Legacy: Start auto-reload server
+dev-legacy:
+    python3 server/serve-with-reload.py 2>&1 | tee /tmp/webui-server.log
+
+# Legacy: Start standard server
+serve-legacy:
+    python3 server/serve.py 2>&1 | tee /tmp/webui-server.log
+
+# View HTTP server logs
+logs:
+    tail -f /tmp/webui-server.log
+
+# View debug WebSocket logs (debug server only)
+debug-logs:
+    tail -f /tmp/webui-debug.log
+
+# View both log files simultaneously
+logs-all:
+    tail -f /tmp/webui-server.log /tmp/webui-debug.log
+
+# Kill any running servers on ports 8000, 8001, 8002
+kill-servers:
+    -lsof -ti:8000 | xargs -r kill -9
+    -lsof -ti:8001 | xargs -r kill -9
+    -lsof -ti:8002 | xargs -r kill -9
+
+# Check if servers are running
+status:
+    @echo "Checking for running servers..."
+    @echo "\n📦 Vite server:"
+    @ps aux | grep -E "vite|node.*vite" | grep -v grep || echo "  Not running"
+    @echo "\n🐍 Python servers:"
+    @ps aux | grep -E "serve(-with-reload|-with-debug|-with-vite)?\.py" | grep -v grep || echo "  Not running"
+    @echo "\n🔌 Port usage:"
+    @lsof -i :8000 || echo "  Port 8000: free"
+    @lsof -i :8001 || echo "  Port 8001: free (Vite/HTTP)"
+    @lsof -i :8002 || echo "  Port 8002: free (WebSocket debug)"
+
+# Clean up log files
+clean-logs:
+    rm -f /tmp/webui-server.log /tmp/webui-debug.log
+
+# Install npm dependencies
+install:
+    npm install
+
+# Run all tests
+test:
+    poetry run python scripts/run_tests.py all
+
+# Run smoke tests (quick critical functionality check)
+test-smoke:
+    poetry run python tests/run_test_suites.py smoke
+
+# Run regression tests (comprehensive feature testing)
+test-regression:
+    poetry run python tests/run_test_suites.py regression
+
+# Run both smoke and regression test suites
+test-suites:
+    poetry run python tests/run_test_suites.py all

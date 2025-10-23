@@ -1,0 +1,772 @@
+{
+  "version": "1.0",
+  "generated": "2025-06-25-20:43:21-+0000",
+  "generator": "TaskJuggler 3.8.1-DEV",
+  "project": {
+    "id": "web_ui_demo",
+    "name": "Web Application Development",
+    "version": "1.0",
+    "start": "2025-01-01",
+    "end": "2025-05-02",
+    "now": "2025-01-27",
+    "timezone": "UTC",
+    "currency": "USD"
+  },
+  "scenarios": [
+    {
+      "id": "plan",
+      "name": "Plan Scenario",
+      "enabled": true,
+      "baseline": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "project",
+      "name": "Web Application Project",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-01",
+          "end": "2025-03-21",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.planning",
+        "project.development",
+        "project.testing",
+        "project.deployment",
+        "project.beta_release"
+      ],
+      "parent": null,
+      "dependencies": []
+    },
+    {
+      "id": "project.planning",
+      "name": "Planning Phase",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-01",
+          "end": "2025-01-14",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.planning.requirements",
+        "project.planning.design",
+        "project.planning.planning_milestone"
+      ],
+      "parent": "project",
+      "dependencies": []
+    },
+    {
+      "id": "project.planning.requirements",
+      "name": "Requirements Gathering",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-01",
+          "end": "2025-01-07",
+          "duration": 0,
+          "effort": 40,
+          "complete": 100,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.planning",
+      "dependencies": []
+    },
+    {
+      "id": "project.planning.design",
+      "name": "System Design",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-08",
+          "end": "2025-01-14",
+          "duration": 0,
+          "effort": 80,
+          "complete": 100,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.planning",
+      "dependencies": [
+        {
+          "task": "project.planning.requirements",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.planning.planning_milestone",
+      "name": "Planning Complete",
+      "type": "milestone",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-14",
+          "end": "2025-01-14",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.planning",
+      "dependencies": [
+        {
+          "task": "project.planning.design",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development",
+      "name": "Development Phase",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-15",
+          "end": "2025-03-05",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.development.setup",
+        "project.development.backend_dev",
+        "project.development.frontend_dev",
+        "project.development.integration",
+        "project.development.critical_fixes"
+      ],
+      "parent": "project",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.setup",
+      "name": "Environment Setup",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-15",
+          "end": "2025-01-17",
+          "duration": 0,
+          "effort": 24,
+          "complete": 100,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.backend_dev",
+      "name": "Backend Development",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-20",
+          "end": "2025-02-24",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.development.backend_dev.api_core",
+        "project.development.backend_dev.database",
+        "project.development.backend_dev.auth",
+        "project.development.backend_dev.api_testing"
+      ],
+      "parent": "project.development",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.backend_dev.api_core",
+      "name": "API Core",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-20",
+          "end": "2025-01-31",
+          "duration": 0,
+          "effort": 80,
+          "complete": 100,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.backend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.setup",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.backend_dev.database",
+      "name": "Database Schema",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-18",
+          "end": "2025-02-24",
+          "duration": 0,
+          "effort": 40,
+          "complete": 90,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.backend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.backend_dev.api_core",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.backend_dev.auth",
+      "name": "Authentication System",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-03",
+          "end": "2025-02-12",
+          "duration": 0,
+          "effort": 64,
+          "complete": 75,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.backend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.backend_dev.api_core",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.backend_dev.api_testing",
+      "name": "API Testing",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-13",
+          "end": "2025-02-17",
+          "duration": 0,
+          "effort": 24,
+          "complete": 20,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.backend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.backend_dev.auth",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.frontend_dev",
+      "name": "Frontend Development",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-20",
+          "end": "2025-03-03",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.development.frontend_dev.ui_framework",
+        "project.development.frontend_dev.components",
+        "project.development.frontend_dev.pages",
+        "project.development.frontend_dev.responsive"
+      ],
+      "parent": "project.development",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.frontend_dev.ui_framework",
+      "name": "UI Framework Setup",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-20",
+          "end": "2025-01-22",
+          "duration": 0,
+          "effort": 24,
+          "complete": 100,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.frontend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.setup",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.frontend_dev.components",
+      "name": "Component Library",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-01-23",
+          "end": "2025-02-05",
+          "duration": 0,
+          "effort": 80,
+          "complete": 100,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.frontend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.frontend_dev.ui_framework",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.frontend_dev.pages",
+      "name": "Application Pages",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-06",
+          "end": "2025-02-26",
+          "duration": 0,
+          "effort": 120,
+          "complete": 65,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.frontend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.frontend_dev.components",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.frontend_dev.responsive",
+      "name": "Responsive Design",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-27",
+          "end": "2025-03-03",
+          "duration": 0,
+          "effort": 40,
+          "complete": 10,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development.frontend_dev",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.frontend_dev.pages",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.integration",
+      "name": "Integration",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-03",
+          "end": "2025-03-05",
+          "duration": 0,
+          "effort": 40,
+          "complete": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.backend_dev.api_testing",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.frontend_dev.responsive",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.development.critical_fixes",
+      "name": "Critical Bug Fixes",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-25",
+          "end": "2025-02-26",
+          "duration": 0,
+          "effort": 24,
+          "complete": 50,
+          "status": "",
+          "priority": 900,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.development",
+      "dependencies": [
+        {
+          "task": "project.planning.planning_milestone",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.development.backend_dev.database",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.testing",
+      "name": "Testing Phase",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-26",
+          "end": "2025-03-20",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.testing.unit_tests",
+        "project.testing.integration_tests",
+        "project.testing.uat"
+      ],
+      "parent": "project",
+      "dependencies": []
+    },
+    {
+      "id": "project.testing.unit_tests",
+      "name": "Unit Testing",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-02-26",
+          "end": "2025-03-05",
+          "duration": 0,
+          "effort": 40,
+          "complete": 30,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.testing",
+      "dependencies": [
+        {
+          "task": "project.development.backend_dev.database",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.testing.integration_tests",
+      "name": "Integration Testing",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-06",
+          "end": "2025-03-17",
+          "duration": 0,
+          "effort": 64,
+          "complete": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.testing",
+      "dependencies": [
+        {
+          "task": "project.development.integration",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.testing.uat",
+      "name": "User Acceptance Testing",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-18",
+          "end": "2025-03-20",
+          "duration": 0,
+          "effort": 40,
+          "complete": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.testing",
+      "dependencies": [
+        {
+          "task": "project.testing.integration_tests",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.deployment",
+      "name": "Deployment",
+      "type": "container",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-18",
+          "end": "2025-03-21",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [
+        "project.deployment.security_audit",
+        "project.deployment.staging",
+        "project.deployment.production"
+      ],
+      "parent": "project",
+      "dependencies": []
+    },
+    {
+      "id": "project.deployment.security_audit",
+      "name": "Security Audit",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-18",
+          "end": "2025-03-19",
+          "duration": 0,
+          "effort": 24,
+          "complete": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.deployment",
+      "dependencies": [
+        {
+          "task": "project.testing.integration_tests",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.deployment.staging",
+      "name": "Staging Deployment",
+      "type": "task",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-19",
+          "end": "2025-03-21",
+          "duration": 0,
+          "effort": 16,
+          "complete": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.deployment",
+      "dependencies": [
+        {
+          "task": "project.deployment.security_audit",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.deployment.production",
+      "name": "Production Deployment",
+      "type": "milestone",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-21",
+          "end": "2025-03-21",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project.deployment",
+      "dependencies": [
+        {
+          "task": "project.deployment.staging",
+          "type": "finish-to-start"
+        },
+        {
+          "task": "project.testing.uat",
+          "type": "finish-to-start"
+        }
+      ]
+    },
+    {
+      "id": "project.beta_release",
+      "name": "Beta Release",
+      "type": "milestone",
+      "scenarios": {
+        "plan": {
+          "start": "2025-03-17",
+          "end": "2025-03-17",
+          "duration": 0,
+          "effort": 0,
+          "status": "",
+          "priority": 500,
+          "scheduled": true
+        }
+      },
+      "children": [],
+      "parent": "project",
+      "dependencies": [
+        {
+          "task": "project.testing.integration_tests",
+          "type": "finish-to-start"
+        }
+      ]
+    }
+  ]
+}
