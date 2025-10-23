@@ -1,5 +1,8 @@
-// Centralized Keyboard Event Management System  
+// Centralized Keyboard Event Management System
 // Single source of truth for all keyboard handling in the application
+
+// Import configuration constants
+import { KEYBOARD } from './config.js';
 
 // Import state store
 import stateStore from './stateStore.js';
@@ -38,11 +41,11 @@ class KeyboardManager {
 
         // Bind handlers for proper event listener removal
         this.focusInHandler = () => {
-            setTimeout(() => this.updateState(), 10);
+            setTimeout(() => this.updateState(), KEYBOARD.FOCUS_DEBOUNCE);
         };
 
         this.focusOutHandler = () => {
-            setTimeout(() => this.updateState(), 10);
+            setTimeout(() => this.updateState(), KEYBOARD.FOCUS_DEBOUNCE);
         };
 
         // Initialize keyboard state in store
@@ -224,16 +227,16 @@ class KeyboardManager {
                         activeElement: document.activeElement.tagName + (document.activeElement.id ? '#' + document.activeElement.id : ''),
                         selectedTask: typeof gantt !== 'undefined' && gantt.getSelectedId ? gantt.getSelectedId() : 'unknown'
                     });
-                }, 10);
-            }, 10);
-        }, 10);
+                }, KEYBOARD.GANTT_REFRESH_DELAY);
+            }, KEYBOARD.GANTT_REFRESH_DELAY);
+        }, KEYBOARD.GANTT_REFRESH_DELAY);
     }
     
     startStateMonitoring() {
         // Monitor for state changes more frequently for better responsiveness
         this.stateMonitoringInterval = setInterval(() => {
             this.updateState();
-        }, 50);
+        }, KEYBOARD.STATE_CHECK_INTERVAL);
 
         // Also monitor on focus changes using bound handlers for proper cleanup
         document.addEventListener('focusin', this.focusInHandler);
@@ -752,9 +755,9 @@ class KeyboardManager {
         // Calculate appropriate scroll amount based on viewport
         const ganttContainer = document.getElementById('gantt_here');
         if (ganttContainer) {
-            return Math.max(200, ganttContainer.clientWidth / 4);
+            return Math.max(KEYBOARD.DEFAULT_SCROLL_AMOUNT, ganttContainer.clientWidth / KEYBOARD.SCROLL_VIEWPORT_DIVISOR);
         }
-        return 200;
+        return KEYBOARD.DEFAULT_SCROLL_AMOUNT;
     }
     
     handleEnterKey(e) {
