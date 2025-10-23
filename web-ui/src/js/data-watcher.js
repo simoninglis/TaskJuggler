@@ -1,9 +1,11 @@
 // Data file watcher for auto-refresh
+import { DATA_WATCHER } from './config.js';
+
 export class DataWatcher {
     constructor() {
         this.dataUrl = '/data/web-ui-demo.json';
         this.lastModified = null;
-        this.checkInterval = 2000; // Check every 2 seconds
+        this.checkInterval = DATA_WATCHER.POLL_INTERVAL;
         this.intervalId = null;
     }
 
