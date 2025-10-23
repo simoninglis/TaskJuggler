@@ -3,7 +3,7 @@
 
 // Wait for DHTMLX Gantt to be available
 function waitForGantt() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         // Check if gantt is already available
         if (typeof gantt !== 'undefined') {
             console.log('✅ DHTMLX Gantt is already loaded');

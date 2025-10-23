@@ -68,7 +68,10 @@ async function loadModulesAfterGantt() {
         // Start watching for data changes
         console.log('⏳ Starting data watcher...');
         dataWatcher.start();
-        
+
+        // Expose dataWatcher to window for cleanup hook
+        window.dataWatcher = dataWatcher;
+
     } catch (error) {
         console.error('❌ Failed to load modules:', error);
         console.error('Stack trace:', error.stack);

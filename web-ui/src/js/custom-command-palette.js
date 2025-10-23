@@ -1,6 +1,9 @@
 // Custom Command Palette Implementation
 // Replaces ninja-keys with a simple, reliable custom solution
 
+// Import DOMPurify for XSS protection
+import DOMPurify from 'dompurify';
+
 // Import state store
 import stateStore from './stateStore.js';
 
@@ -1066,11 +1069,15 @@ class CustomCommandPalette {
             
             // Special handling for month navigation
             if (task.type === 'month') {
+                // Sanitize task text to prevent XSS
+                const sanitizedText = DOMPurify.sanitize(task.text, { ALLOWED_TAGS: [] });
+                const sanitizedMonthName = DOMPurify.sanitize(task.monthData.displayName, { ALLOWED_TAGS: [] });
+
                 taskElement.innerHTML = `
                     <span class="command-icon">${task.icon}</span>
                     <div class="command-content">
-                        <div class="command-title">${task.text}</div>
-                        <div class="command-description">Jump to the beginning of ${task.monthData.displayName}</div>
+                        <div class="command-title">${sanitizedText}</div>
+                        <div class="command-description">Jump to the beginning of ${sanitizedMonthName}</div>
                     </div>
                 `;
             } else {
@@ -1092,10 +1099,13 @@ class CustomCommandPalette {
     }
     
     highlightMatch(text, searchTerm) {
-        if (!searchTerm) return text;
-        
+        // Sanitize text first to prevent XSS
+        const sanitizedText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
+
+        if (!searchTerm) return sanitizedText;
+
         const regex = new RegExp(`(${searchTerm})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        return sanitizedText.replace(regex, '<mark>$1</mark>');
     }
     
     renderGoMode() {

@@ -1,6 +1,9 @@
 // DHTMLX Gantt Configuration
 // This file contains all initial configuration for the DHTMLX Gantt library
 
+// Import DOMPurify for XSS protection
+import DOMPurify from 'dompurify';
+
 // Make function available globally for app.js
 window.initializeGanttConfig = function initializeGanttConfig() {
     // Ensure task types are properly defined
@@ -42,13 +45,16 @@ window.initializeGanttConfig = function initializeGanttConfig() {
     gantt.templates.task_text = function(start, end, task) {
         const searchInput = document.getElementById('searchInput');
         const searchTerm = searchInput ? searchInput.value.trim() : '';
-        
-        if (searchTerm && task.text) {
+
+        // Sanitize task text to prevent XSS attacks
+        const sanitizedText = task.text ? DOMPurify.sanitize(task.text, { ALLOWED_TAGS: [] }) : '';
+
+        if (searchTerm && sanitizedText) {
             // Case-insensitive search with proper escaping
             const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
-            return task.text.replace(regex, '<span class="highlight">$1</span>');
+            return sanitizedText.replace(regex, '<span class="highlight">$1</span>');
         }
-        return task.text;
+        return sanitizedText;
     };
     
     // Apply CSS classes based on task type (essential for milestone diamond styling)
@@ -62,7 +68,8 @@ window.initializeGanttConfig = function initializeGanttConfig() {
     // Configure milestone label display (show text to the right of diamond)
     gantt.templates.rightside_text = function(start, end, task) {
         if (task.type === gantt.config.types.milestone) {
-            return task.text;
+            // Sanitize milestone text to prevent XSS attacks
+            return task.text ? DOMPurify.sanitize(task.text, { ALLOWED_TAGS: [] }) : '';
         }
         return "";
     };

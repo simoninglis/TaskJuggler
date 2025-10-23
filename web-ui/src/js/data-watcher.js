@@ -8,11 +8,14 @@ export class DataWatcher {
     }
 
     start() {
+        // Stop any existing interval to prevent duplicates
+        this.stop();
+
         console.log('📡 Starting data file watcher...');
-        
+
         // Initial load
         this.checkForUpdates();
-        
+
         // Start polling
         this.intervalId = setInterval(() => {
             this.checkForUpdates();

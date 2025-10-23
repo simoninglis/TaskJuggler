@@ -56,5 +56,34 @@ if (document.readyState !== 'loading') {
     });
 }
 
+// Cleanup handler to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+    console.log('🧹 Cleaning up resources before page unload...');
+
+    // Clean up keyboard manager
+    if (window.keyboardManager && window.keyboardManager.cleanup) {
+        window.keyboardManager.cleanup();
+        console.log('✅ Keyboard manager cleaned up');
+    }
+
+    // Clean up data watcher
+    if (window.dataWatcher && window.dataWatcher.stop) {
+        window.dataWatcher.stop();
+        console.log('✅ Data watcher stopped');
+    }
+
+    // Clean up WebSocket data watcher
+    if (window.wsDataWatcher && window.wsDataWatcher.ws) {
+        window.wsDataWatcher.ws.close();
+        console.log('✅ WebSocket data watcher closed');
+    }
+
+    // Clean up File System watcher
+    if (window.fsWatcher && window.fsWatcher.eventSource) {
+        window.fsWatcher.eventSource.close();
+        console.log('✅ File System watcher closed');
+    }
+});
+
 // Export for use in main.js
 export { initializeApp };

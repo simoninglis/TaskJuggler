@@ -32,7 +32,19 @@ class KeyboardManager {
         
         // Debug logging
         this.debugEnabled = typeof window.debugLog === 'function';
-        
+
+        // Instance variable for interval tracking
+        this.stateMonitoringInterval = null;
+
+        // Bind handlers for proper event listener removal
+        this.focusInHandler = () => {
+            setTimeout(() => this.updateState(), 10);
+        };
+
+        this.focusOutHandler = () => {
+            setTimeout(() => this.updateState(), 10);
+        };
+
         // Initialize keyboard state in store
         stateStore.setKeyboardState(this.States.GANTT_FOCUSED);
         stateStore.setPrefixKey(null);
@@ -219,18 +231,30 @@ class KeyboardManager {
     
     startStateMonitoring() {
         // Monitor for state changes more frequently for better responsiveness
-        setInterval(() => {
+        this.stateMonitoringInterval = setInterval(() => {
             this.updateState();
         }, 50);
-        
-        // Also monitor on focus changes
-        document.addEventListener('focusin', () => {
-            setTimeout(() => this.updateState(), 10);
-        });
-        
-        document.addEventListener('focusout', () => {
-            setTimeout(() => this.updateState(), 10);
-        });
+
+        // Also monitor on focus changes using bound handlers for proper cleanup
+        document.addEventListener('focusin', this.focusInHandler);
+        document.addEventListener('focusout', this.focusOutHandler);
+    }
+
+    stopStateMonitoring() {
+        // Clear the interval to prevent memory leak
+        if (this.stateMonitoringInterval !== null) {
+            clearInterval(this.stateMonitoringInterval);
+            this.stateMonitoringInterval = null;
+        }
+
+        // Remove event listeners using the same bound handlers
+        document.removeEventListener('focusin', this.focusInHandler);
+        document.removeEventListener('focusout', this.focusOutHandler);
+    }
+
+    cleanup() {
+        // Public method to clean up all resources
+        this.stopStateMonitoring();
     }
     
     // ===================
