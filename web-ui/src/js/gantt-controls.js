@@ -4,6 +4,7 @@
 // Import state store
 import stateStore from './stateStore.js';
 import { KEYBOARD, SEARCH, GANTT } from './config.js';
+import { addAllChildren, addParentHierarchy, addAllDescendants } from './gantt-utils.js';
 
 // Local variables (not part of global state)
 let searchTimeout = null;
@@ -155,23 +156,6 @@ function filterTasks(searchTerm, focusFirstMatch = false) {
     
     stateStore.set('isFiltered', true);
     updateStatus(`Found ${matchingTaskIds.size} matching tasks, showing ${filteredData.data.length} total tasks with context`);
-}
-
-function addAllChildren(parentId, allTasks, includeSet) {
-    allTasks.forEach(task => {
-        if (task.parent === parentId) {
-            includeSet.add(task.id);
-            addAllChildren(task.id, allTasks, includeSet); // Recursive
-        }
-    });
-}
-
-function addParentHierarchy(taskId, allTasks, includeSet) {
-    const task = allTasks.find(t => t.id === taskId);
-    if (!task || !task.parent || task.parent === 0) return;
-    
-    includeSet.add(task.parent);
-    addParentHierarchy(task.parent, allTasks, includeSet); // Recursive
 }
 
 function clearSearch() {
@@ -514,9 +498,9 @@ function applyTaskFilter(filteredTasks, message) {
                 break;
             }
         }
-        
+
         // Add all children of filtered tasks
-        addAllChildrenForFilter(task.id, tasksToShow);
+        addAllDescendants(task.id, tasksToShow);
     });
     
     // Create filtered data
@@ -546,15 +530,6 @@ function applyTaskFilter(filteredTasks, message) {
         filterDiv.style.display = 'block';
         filterDesc.textContent = message;
     }
-}
-
-function addAllChildrenForFilter(parentId, includeSet) {
-    gantt.eachTask(function(child) {
-        includeSet.add(child.id);
-        if (gantt.hasChild(child.id)) {
-            addAllChildrenForFilter(child.id, includeSet);
-        }
-    }, parentId);
 }
 
 function clearAllFilters() {
@@ -680,15 +655,6 @@ function exitFocusMode() {
         updateStatus('Focus mode exited');
         hideFocusIndicator();
     }
-}
-
-function addAllDescendants(parentId, includeSet) {
-    gantt.eachTask(function(child) {
-        includeSet.add(child.id);
-        if (gantt.hasChild(child.id)) {
-            addAllDescendants(child.id, includeSet);
-        }
-    }, parentId);
 }
 
 function showFocusIndicator() {
