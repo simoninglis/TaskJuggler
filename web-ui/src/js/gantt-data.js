@@ -1,6 +1,9 @@
 // Data Loading and Conversion
 // This file handles loading TaskJuggler data and converting it to DHTMLX format
 
+import { rebuildSearchIndex } from './palette/palette-search.js';
+import { registerTaskIndexHooks } from './search/task-index.js';
+
 // Store original data for filtering
 let originalData = null;
 
@@ -42,7 +45,18 @@ window.loadTaskJugglerData = function loadTaskJugglerData() {
             console.log("📥 Parsing data into Gantt...");
             gantt.parse(dhtmlxData);
             console.log("✅ Data parsed into Gantt");
-            
+
+            // Rebuild search index after loading new data
+            console.log("📊 Rebuilding search index...");
+            rebuildSearchIndex();
+            console.log("✅ Search index rebuilt");
+
+            // Register gantt hooks for incremental index updates (deferred until gantt is initialized)
+            if (typeof gantt !== 'undefined') {
+                registerTaskIndexHooks(gantt);
+                console.log("✅ Task index hooks registered");
+            }
+
             if (typeof updateStatus === 'function') {
                 updateStatus(`Loaded ${data.tasks.length} tasks from TaskJuggler project: ${data.project}`);
             }
