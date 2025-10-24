@@ -147,17 +147,7 @@ test.describe('State Polling Performance', () => {
         // Wait for the app to load
         await page.waitForSelector('#gantt_here', { state: 'visible' });
 
-        // Read the actual config value being used
-        const configValue = await page.evaluate(() => {
-            // Import config module and check STATE_CHECK_INTERVAL
-            if (window.keyboardManager) {
-                // Check the actual interval being used
-                return window.keyboardManager.stateMonitoringInterval;
-            }
-            return null;
-        });
-
-        // Also check the config constant directly
+        // Read the config constant directly (not the timer ID!)
         const stateCheckInterval = await page.evaluate(async () => {
             // Dynamically import the config module
             const config = await import('/src/js/config.js');
@@ -171,5 +161,92 @@ test.describe('State Polling Performance', () => {
 
         // Ensure it's NOT the old value
         expect(stateCheckInterval).not.toBe(50);
+    });
+
+    test('should catch asynchronous state changes with 250ms polling (edge cases)', async ({ page }) => {
+        // Navigate to the web UI
+        await page.goto('http://localhost:8001');
+
+        // Wait for the app to fully load
+        await page.waitForSelector('#gantt_here', { state: 'visible' });
+        await page.waitForTimeout(2000);
+
+        // Install spy to track state changes detected by polling
+        await page.evaluate(() => {
+            window.stateChanges = [];
+            const originalUpdateState = window.keyboardManager.updateState.bind(window.keyboardManager);
+            window.keyboardManager.updateState = function() {
+                const currentState = window.stateStore.getKeyboardState();
+                window.stateChanges.push({
+                    timestamp: Date.now(),
+                    state: currentState
+                });
+                return originalUpdateState();
+            };
+        });
+
+        // Test case 1: Command palette opening (asynchronous state change)
+        console.log('Testing command palette state detection...');
+        const beforePalette = await page.evaluate(() => window.stateChanges.length);
+
+        // Open command palette with Ctrl+Shift+P
+        await page.keyboard.press('Control+Shift+KeyP');
+
+        // Wait for up to 500ms (2 polling cycles) for state change to be detected
+        await page.waitForTimeout(500);
+
+        const afterPalette = await page.evaluate(() => {
+            const changes = window.stateChanges.slice(window.stateChanges.length - 3);
+            return {
+                totalChanges: window.stateChanges.length,
+                recentStates: changes.map(c => c.state)
+            };
+        });
+
+        console.log(`Command palette detection: ${afterPalette.totalChanges - beforePalette} state checks, states: ${afterPalette.recentStates.join(', ')}`);
+
+        // Verify state was eventually detected (within 2 polling cycles = 500ms)
+        expect(afterPalette.totalChanges).toBeGreaterThan(beforePalette);
+        expect(afterPalette.recentStates).toContain('custom_palette_open');
+
+        // Close palette with Escape
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
+
+        // Test case 2: Focus changes between gantt and search
+        console.log('Testing focus state transitions...');
+        const beforeFocusTest = await page.evaluate(() => window.stateChanges.length);
+
+        // Click search input
+        await page.click('#searchInput');
+        await page.waitForTimeout(300); // Wait for 1+ polling cycle
+
+        const afterSearchFocus = await page.evaluate(() => {
+            const changes = window.stateChanges.slice(-2);
+            return {
+                totalChanges: window.stateChanges.length,
+                recentStates: changes.map(c => c.state)
+            };
+        });
+
+        // Verify search_focused state was detected
+        expect(afterSearchFocus.recentStates).toContain('search_focused');
+
+        // Click gantt to change focus back
+        await page.click('#gantt_here');
+        await page.waitForTimeout(300);
+
+        const afterGanttFocus = await page.evaluate(() => {
+            const changes = window.stateChanges.slice(-2);
+            return {
+                totalChanges: window.stateChanges.length,
+                recentStates: changes.map(c => c.state)
+            };
+        });
+
+        // Verify gantt_focused state was detected
+        expect(afterGanttFocus.recentStates).toContain('gantt_focused');
+
+        console.log('Edge case testing complete: Polling successfully detects async state changes within 250-500ms');
     });
 });

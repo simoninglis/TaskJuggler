@@ -249,7 +249,8 @@ class KeyboardManager {
     }
 
     startStateMonitoring() {
-        // Monitor for state changes more frequently for better responsiveness
+        // Monitor for state changes periodically to catch edge cases
+        // Event listeners (focusin/focusout) provide immediate responsiveness
         this.stateMonitoringInterval = setInterval(() => {
             this.updateState();
         }, KEYBOARD.STATE_CHECK_INTERVAL);
