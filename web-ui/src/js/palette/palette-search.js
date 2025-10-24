@@ -6,9 +6,21 @@
  * @module palette/palette-search
  */
 
+import { taskIndex } from '../search/task-index.js';
+import { SEARCH } from '../config.js';
+
+/**
+ * Rebuild the task search index
+ * Call this when task data changes (e.g., after loading new data)
+ */
+export function rebuildSearchIndex() {
+    taskIndex.rebuild();
+}
+
 /**
  * Perform task search based on search term
- * Searches for tasks by text and also checks for month navigation
+ * Uses O(1) task index with substring fallback for fast search
+ * Also checks for month navigation
  * @param {string} searchTerm - The search term to filter tasks
  * @returns {Array} Array of matching tasks or month navigation results
  */
@@ -30,24 +42,14 @@ export function performTaskSearch(searchTerm) {
             icon: '📅'
         });
 
-        // Also search for tasks
-        const allTasks = gantt.getTaskByTime();
-        const taskResults = allTasks.filter(task => {
-            const taskText = task.text.toLowerCase();
-            return taskText.includes(searchTerm.toLowerCase());
-        });
+        // Also search for tasks using task index
+        const taskResults = taskIndex.searchWithSubstring(searchTerm);
 
         // Add task results after month result
         return results.concat(taskResults);
     } else {
-        // Get all tasks from gantt
-        const allTasks = gantt.getTaskByTime();
-
-        // Filter tasks by search term
-        return allTasks.filter(task => {
-            const taskText = task.text.toLowerCase();
-            return taskText.includes(searchTerm.toLowerCase());
-        });
+        // Use task index with substring fallback (O(1) fast path, O(n) slow path)
+        return taskIndex.searchWithSubstring(searchTerm);
     }
 }
 
@@ -154,4 +156,41 @@ export function filterCommands(commands, searchTerm) {
         const searchText = `${command.title} ${command.description} ${command.keywords}`.toLowerCase();
         return searchText.includes(term);
     });
+}
+
+/**
+ * Timer reference for debouncing search operations
+ * @private
+ */
+let searchDebounceTimer = null;
+
+/**
+ * Perform debounced task search
+ * Delays search execution until user stops typing and enforces minimum search length
+ *
+ * @param {string} searchTerm - The search term entered by user
+ * @param {Function} callback - Callback function to receive search results
+ *
+ * @example
+ * performSearchDebounced('dev', (results) => {
+ *     console.log('Search results:', results);
+ * });
+ */
+export function performSearchDebounced(searchTerm, callback) {
+    clearTimeout(searchDebounceTimer);
+
+    // Normalize input - handle null/undefined and trim whitespace
+    const term = (searchTerm ?? '').trim();
+
+    // Don't search if input is too short
+    if (term.length < SEARCH.MIN_SEARCH_LENGTH) {
+        callback([]);
+        return;
+    }
+
+    // Delay search execution by DEBOUNCE_DELAY milliseconds
+    searchDebounceTimer = setTimeout(() => {
+        const results = performTaskSearch(term);
+        callback(results);
+    }, SEARCH.DEBOUNCE_DELAY);
 }

@@ -101,8 +101,15 @@ export const SEARCH = {
   /**
    * Debounce delay for search input (milliseconds)
    * Prevents excessive filtering while user is typing
+   * Reduced from 300ms to 150ms for snappier feel
    */
-  DEBOUNCE_DELAY: 300,
+  DEBOUNCE_DELAY: 150,
+
+  /**
+   * Minimum search length before triggering search (characters)
+   * Don't search until 2+ characters are entered
+   */
+  MIN_SEARCH_LENGTH: 2,
 
   /**
    * Delay before focusing search input (milliseconds)
