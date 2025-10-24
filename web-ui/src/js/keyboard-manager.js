@@ -20,6 +20,9 @@ import {
 // Import global hotkey definitions
 import { registerGlobalHotkeys } from './keyboard/hotkey-definitions.js';
 
+// Import navigation functions from gantt-navigation module
+import { selectNextTask, selectPreviousTask } from './gantt/gantt-navigation.js';
+
 console.log('🔥 keyboard-manager.js is loading...');
 if (window.debugLog) {
     window.debugLog('debug', 'keyboard-manager.js file is loading');
@@ -427,60 +430,12 @@ class KeyboardManager {
 
 // ===================
 // Navigation Utility Functions
-// (Global functions for backward compatibility)
+// (Imported from gantt-navigation.js for backward compatibility)
 // ===================
 
-function selectNextTask() {
-    const allTasks = gantt.getTaskByTime();
-    const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
-    const currentId = gantt.getSelectedId();
-
-    if (window.debugLog) {
-        window.debugLog('debug', 'Selecting next task', {
-            totalTasks: allTasks.length,
-            visibleTasks: visibleTasks.length,
-            currentSelection: currentId
-        });
-    }
-
-    if (!currentId || visibleTasks.length === 0) {
-        if (visibleTasks.length > 0) {
-            gantt.selectTask(visibleTasks[0].id);
-        }
-        return;
-    }
-
-    const currentIndex = visibleTasks.findIndex(task => task.id === currentId);
-    if (currentIndex !== -1 && currentIndex < visibleTasks.length - 1) {
-        gantt.selectTask(visibleTasks[currentIndex + 1].id);
-    }
-}
-
-function selectPreviousTask() {
-    const allTasks = gantt.getTaskByTime();
-    const visibleTasks = allTasks.filter(task => gantt.isTaskVisible(task.id));
-    const currentId = gantt.getSelectedId();
-
-    if (window.debugLog) {
-        window.debugLog('debug', 'Selecting previous task', {
-            totalTasks: allTasks.length,
-            visibleTasks: visibleTasks.length,
-            currentSelection: currentId
-        });
-    }
-
-    if (!currentId || visibleTasks.length === 0) {
-        if (visibleTasks.length > 0) {
-            gantt.selectTask(visibleTasks[visibleTasks.length - 1].id);
-        }
-        return;
-    }
-
-    const currentIndex = visibleTasks.findIndex(task => task.id === currentId);
-    if (currentIndex > 0) {
-        gantt.selectTask(visibleTasks[currentIndex - 1].id);
-    }
-}
+// Export to window for backward compatibility with existing code
+window.selectNextTask = selectNextTask;
+window.selectPreviousTask = selectPreviousTask;
 
 // Create global keyboard manager instance
 console.log('🚀 Initializing KeyboardManager...');
