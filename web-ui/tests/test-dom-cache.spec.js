@@ -17,8 +17,6 @@ import {
   getActiveFilters,
   getFilterDescription,
   invalidateCache,
-  enableAutoInvalidation,
-  disableAutoInvalidation,
   registerInvalidationTriggers,
   invalidateElement,
   isCacheInitialized,
@@ -41,7 +39,6 @@ describe('DOM Cache Module', () => {
   // Clean up after each test
   afterEach(() => {
     invalidateCache();
-    disableAutoInvalidation();
     _resetForTesting(); // Reset module-scoped state for test isolation
     document.body.innerHTML = '';
   });
@@ -164,31 +161,26 @@ describe('DOM Cache Module', () => {
   });
 
   // ========================
-  // Bug Fix #1: Subtree Removal Detection
+  // Automatic Invalidation via isConnected
   // ========================
 
-  describe('Bug Fix #1: Subtree Removal Detection', () => {
-    it('should detect when cached element is removed directly', (done) => {
-      // Enable auto-invalidation
-      enableAutoInvalidation();
-
+  describe('Automatic Invalidation via isConnected', () => {
+    it('should detect when cached element is removed directly and re-query DOM', () => {
       // Cache the element
       const ganttContainer = getGanttContainer();
       expect(ganttContainer).toBeTruthy();
+      expect(ganttContainer.id).toBe('gantt_here');
       expect(isCacheInitialized()).toBe(true);
 
-      // Remove the element directly
+      // Remove the element from DOM
       ganttContainer.remove();
 
-      // MutationObserver is async, wait for it to process
-      setTimeout(() => {
-        // Cache should have been invalidated
-        expect(isCacheInitialized()).toBe(false);
-        done();
-      }, 100);
+      // Next access should detect element is disconnected and return null
+      const ganttAfterRemoval = getGanttContainer();
+      expect(ganttAfterRemoval).toBeNull();
     });
 
-    it('should detect when cached element is inside a removed container (subtree removal)', (done) => {
+    it('should detect when cached element is inside a removed container (subtree removal)', () => {
       // Create a container with the search input inside
       document.body.innerHTML = `
         <div id="container">
@@ -196,108 +188,52 @@ describe('DOM Cache Module', () => {
         </div>
       `;
 
-      // Enable auto-invalidation
-      enableAutoInvalidation();
-
       // Cache the search input
       const searchInput = getSearchInput();
       expect(searchInput).toBeTruthy();
+      expect(searchInput.id).toBe('searchInput');
       expect(isCacheInitialized()).toBe(true);
 
       // Remove the PARENT container (not the input directly)
       const container = document.getElementById('container');
       container.remove();
 
-      // MutationObserver should detect this and invalidate cache
-      setTimeout(() => {
-        // Cache should have been invalidated
-        expect(isCacheInitialized()).toBe(false);
-        done();
-      }, 100);
+      // Next access should detect element is no longer connected
+      const searchAfterRemoval = getSearchInput();
+      expect(searchAfterRemoval).toBeNull();
     });
 
-    it('should NOT invalidate cache when unrelated elements are removed', (done) => {
-      // Enable auto-invalidation
-      enableAutoInvalidation();
-
-      // Cache an element
+    it('should re-cache element if it is re-added to DOM after removal', () => {
+      // Cache the element
       const ganttContainer = getGanttContainer();
       expect(ganttContainer).toBeTruthy();
-      expect(isCacheInitialized()).toBe(true);
+      expect(ganttContainer.id).toBe('gantt_here');
 
-      // Add and remove an unrelated element
-      const unrelatedDiv = document.createElement('div');
-      unrelatedDiv.id = 'unrelated';
-      document.body.appendChild(unrelatedDiv);
-      unrelatedDiv.remove();
+      // Remove the element
+      ganttContainer.remove();
 
-      // Wait for MutationObserver
-      setTimeout(() => {
-        // Cache should still be initialized (no invalidation)
-        expect(isCacheInitialized()).toBe(true);
-        done();
-      }, 100);
+      // Verify it returns null after removal
+      expect(getGanttContainer()).toBeNull();
+
+      // Re-add a new element with the same ID
+      const newGanttContainer = document.createElement('div');
+      newGanttContainer.id = 'gantt_here';
+      document.body.appendChild(newGanttContainer);
+
+      // Next access should find and cache the new element
+      const ganttAfterReAdd = getGanttContainer();
+      expect(ganttAfterReAdd).toBeTruthy();
+      expect(ganttAfterReAdd).toBe(newGanttContainer);
+      expect(ganttAfterReAdd).not.toBe(ganttContainer); // Different element
     });
   });
 
-  // ========================
-  // Bug Fix #2: DOM Ready Check
-  // ========================
-
-  describe('Bug Fix #2: DOM Ready Check', () => {
-    it('should NOT crash when enableAutoInvalidation() is called before document.body exists', () => {
-      // Temporarily remove document.body
-      const originalBody = document.body;
-      Object.defineProperty(document, 'body', {
-        get: () => null,
-        configurable: true
-      });
-
-      // This should not throw an error
-      expect(() => {
-        enableAutoInvalidation();
-      }).not.toThrow();
-
-      // Restore document.body
-      Object.defineProperty(document, 'body', {
-        get: () => originalBody,
-        configurable: true
-      });
-    });
-
-    it('should log warning when enableAutoInvalidation() is called before document.body exists', () => {
-      // Mock console.warn
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      // Temporarily remove document.body
-      const originalBody = document.body;
-      Object.defineProperty(document, 'body', {
-        get: () => null,
-        configurable: true
-      });
-
-      // Call enableAutoInvalidation
-      enableAutoInvalidation();
-
-      // Should have logged a warning
-      expect(warnSpy).toHaveBeenCalledWith(
-        '[DOM Cache] Cannot enable auto-invalidation: document.body not available'
-      );
-
-      // Restore
-      Object.defineProperty(document, 'body', {
-        get: () => originalBody,
-        configurable: true
-      });
-      warnSpy.mockRestore();
-    });
-  });
 
   // ========================
-  // Bug Fix #3: Idempotency
+  // Event Listener Idempotency
   // ========================
 
-  describe('Bug Fix #3: Event Listener Idempotency', () => {
+  describe('Event Listener Idempotency', () => {
     it('should NOT add duplicate event listeners when registerInvalidationTriggers() is called multiple times', () => {
       // Mock addEventListener to count calls
       const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
@@ -317,21 +253,19 @@ describe('DOM Cache Module', () => {
       windowAddEventListenerSpy.mockRestore();
     });
 
-    it('should log warning when registerInvalidationTriggers() is called multiple times', () => {
-      // Mock console.warn
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
+    it('should be safe to call registerInvalidationTriggers() multiple times', () => {
       // First call
       registerInvalidationTriggers();
-      expect(warnSpy).not.toHaveBeenCalled();
 
-      // Second call should log warning
-      registerInvalidationTriggers();
-      expect(warnSpy).toHaveBeenCalledWith(
-        '[DOM Cache] Invalidation triggers already registered'
-      );
+      // Second call should not throw an error (idempotent)
+      expect(() => {
+        registerInvalidationTriggers();
+      }).not.toThrow();
 
-      warnSpy.mockRestore();
+      // Third call also should not throw
+      expect(() => {
+        registerInvalidationTriggers();
+      }).not.toThrow();
     });
   });
 
@@ -339,47 +273,67 @@ describe('DOM Cache Module', () => {
   // Integration Tests
   // ========================
 
-  describe('Integration: Auto-Invalidation + Event Triggers', () => {
-    it('should work correctly when both auto-invalidation and event triggers are enabled', (done) => {
-      // Enable both features
-      enableAutoInvalidation();
+  describe('Integration: isConnected + Event Triggers', () => {
+    it('should work correctly when event triggers are enabled', () => {
+      // Register event triggers
       registerInvalidationTriggers();
 
       // Cache an element
       const ganttContainer = getGanttContainer();
+      expect(ganttContainer).toBeTruthy();
       expect(isCacheInitialized()).toBe(true);
 
       // Remove the element
       ganttContainer.remove();
 
-      // Auto-invalidation should detect removal
-      setTimeout(() => {
-        expect(isCacheInitialized()).toBe(false);
-        done();
-      }, 100);
+      // Next access should use isConnected check and return null
+      const ganttAfterRemoval = getGanttContainer();
+      expect(ganttAfterRemoval).toBeNull();
     });
 
-    it('should handle disable and re-enable of auto-invalidation', () => {
-      // Enable
-      enableAutoInvalidation();
+    it('should invalidate cache when page visibility changes', () => {
+      // Cache an element
+      const ganttContainer = getGanttContainer();
+      expect(isCacheInitialized()).toBe(true);
 
-      // Disable
-      disableAutoInvalidation();
+      // Register triggers
+      registerInvalidationTriggers();
 
-      // Re-enable should work without issues
-      expect(() => {
-        enableAutoInvalidation();
-      }).not.toThrow();
+      // Simulate page becoming hidden then visible
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        get: () => false
+      });
+
+      // Dispatch visibilitychange event
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      // Cache should be invalidated
+      expect(isCacheInitialized()).toBe(false);
+
+      // Clean up
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        get: () => document.visibilityState === 'hidden'
+      });
     });
 
-    it('should allow calling enableAutoInvalidation() multiple times (idempotent)', () => {
-      // First call
-      enableAutoInvalidation();
+    it('should work correctly after full reset', () => {
+      // Cache some elements
+      getGanttContainer();
+      getSearchInput();
+      expect(isCacheInitialized()).toBe(true);
 
-      // Second call should not cause issues
-      expect(() => {
-        enableAutoInvalidation();
-      }).not.toThrow();
+      // Full reset
+      _resetForTesting();
+
+      // Cache should be empty
+      expect(isCacheInitialized()).toBe(false);
+
+      // Should be able to cache again
+      const ganttContainer = getGanttContainer();
+      expect(ganttContainer).toBeTruthy();
+      expect(isCacheInitialized()).toBe(true);
     });
   });
 

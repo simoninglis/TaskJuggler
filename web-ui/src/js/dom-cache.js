@@ -9,8 +9,20 @@
  * - Reduces from multiple queries per interaction to single cached reference
  * - Especially beneficial for elements accessed in polling loops or event handlers
  *
+ * Cache Invalidation Strategy:
+ * - Uses lightweight isConnected checks instead of heavy MutationObserver
+ * - Automatically re-queries if cached element is no longer in DOM
+ * - Manual invalidation available via invalidateCache() or invalidateElement()
+ * - Event-based invalidation on page visibility changes
+ *
  * @module dom-cache
  */
+
+/**
+ * Debug mode flag - set to true to enable console logging
+ * @type {boolean}
+ */
+const DEBUG = false;
 
 /**
  * Cached DOM element references
@@ -31,6 +43,12 @@ let cachedElements = {
  * @returns {HTMLElement|null} The gantt container element
  */
 export function getGanttContainer() {
+  // Check if cached element is still connected to DOM
+  if (cachedElements.ganttContainer && !cachedElements.ganttContainer.isConnected) {
+    if (DEBUG) console.log('[DOM Cache] ganttContainer disconnected, invalidating');
+    cachedElements.ganttContainer = null;
+  }
+
   if (!cachedElements.ganttContainer) {
     cachedElements.ganttContainer = document.getElementById('gantt_here');
   }
@@ -44,6 +62,12 @@ export function getGanttContainer() {
  * @returns {HTMLInputElement|null} The search input element
  */
 export function getSearchInput() {
+  // Check if cached element is still connected to DOM
+  if (cachedElements.searchInput && !cachedElements.searchInput.isConnected) {
+    if (DEBUG) console.log('[DOM Cache] searchInput disconnected, invalidating');
+    cachedElements.searchInput = null;
+  }
+
   if (!cachedElements.searchInput) {
     cachedElements.searchInput = document.getElementById('searchInput');
   }
@@ -57,6 +81,12 @@ export function getSearchInput() {
  * @returns {HTMLElement|null} The keyboard help custom element
  */
 export function getKeyboardHelp() {
+  // Check if cached element is still connected to DOM
+  if (cachedElements.keyboardHelp && !cachedElements.keyboardHelp.isConnected) {
+    if (DEBUG) console.log('[DOM Cache] keyboardHelp disconnected, invalidating');
+    cachedElements.keyboardHelp = null;
+  }
+
   if (!cachedElements.keyboardHelp) {
     cachedElements.keyboardHelp = document.querySelector('keyboard-help');
   }
@@ -70,6 +100,12 @@ export function getKeyboardHelp() {
  * @returns {HTMLElement|null} The active filters display element
  */
 export function getActiveFilters() {
+  // Check if cached element is still connected to DOM
+  if (cachedElements.activeFilters && !cachedElements.activeFilters.isConnected) {
+    if (DEBUG) console.log('[DOM Cache] activeFilters disconnected, invalidating');
+    cachedElements.activeFilters = null;
+  }
+
   if (!cachedElements.activeFilters) {
     cachedElements.activeFilters = document.getElementById('activeFilters');
   }
@@ -83,6 +119,12 @@ export function getActiveFilters() {
  * @returns {HTMLElement|null} The filter description element
  */
 export function getFilterDescription() {
+  // Check if cached element is still connected to DOM
+  if (cachedElements.filterDescription && !cachedElements.filterDescription.isConnected) {
+    if (DEBUG) console.log('[DOM Cache] filterDescription disconnected, invalidating');
+    cachedElements.filterDescription = null;
+  }
+
   if (!cachedElements.filterDescription) {
     cachedElements.filterDescription = document.getElementById('filterDescription');
   }
@@ -102,22 +144,12 @@ export function invalidateCache() {
     activeFilters: null,
     filterDescription: null,
   };
+  if (DEBUG) console.log('[DOM Cache] Cache invalidated');
 }
 
 // ========================
-// Automatic Invalidation
+// Event-Based Invalidation
 // ========================
-
-/**
- * MutationObserver instance for automatic cache invalidation
- * Watches for DOM changes that might affect cached elements
- */
-let mutationObserver = null;
-
-/**
- * Flag to track if automatic invalidation is enabled
- */
-let autoInvalidationEnabled = false;
 
 /**
  * Flag to track if invalidation triggers have been registered
@@ -126,98 +158,11 @@ let autoInvalidationEnabled = false;
 let triggersRegistered = false;
 
 /**
- * Enable automatic cache invalidation using MutationObserver
- *
- * This monitors the DOM for:
- * - Element removal (cached elements deleted from DOM)
- * - Attribute changes on cached elements
- * - Child list changes in parent containers
- *
- * Call this after initial page load to enable automatic cache management.
+ * Event handler references stored at module level
+ * Required for proper cleanup in _resetForTesting()
  */
-export function enableAutoInvalidation() {
-  if (autoInvalidationEnabled) {
-    return; // Already enabled
-  }
-
-  // Guard: Ensure DOM is ready before observing
-  if (!document.body) {
-    console.warn('[DOM Cache] Cannot enable auto-invalidation: document.body not available');
-    return;
-  }
-
-  // Create mutation observer to watch for DOM changes
-  mutationObserver = new MutationObserver((mutations) => {
-    let shouldInvalidate = false;
-
-    for (const mutation of mutations) {
-      // Check if any cached element was removed
-      if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
-        for (const node of mutation.removedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            // Check if removed node IS any of our cached elements
-            if (
-              node === cachedElements.ganttContainer ||
-              node === cachedElements.searchInput ||
-              node === cachedElements.keyboardHelp ||
-              node === cachedElements.activeFilters ||
-              node === cachedElements.filterDescription ||
-              node.id === 'gantt_here' ||
-              node.id === 'searchInput' ||
-              node.id === 'activeFilters' ||
-              node.id === 'filterDescription' ||
-              node.tagName === 'KEYBOARD-HELP'
-            ) {
-              shouldInvalidate = true;
-              break;
-            }
-
-            // Also check if removed node CONTAINS any of our cached elements (subtree removal)
-            if (
-              (cachedElements.ganttContainer && node.contains(cachedElements.ganttContainer)) ||
-              (cachedElements.searchInput && node.contains(cachedElements.searchInput)) ||
-              (cachedElements.keyboardHelp && node.contains(cachedElements.keyboardHelp)) ||
-              (cachedElements.activeFilters && node.contains(cachedElements.activeFilters)) ||
-              (cachedElements.filterDescription && node.contains(cachedElements.filterDescription))
-            ) {
-              shouldInvalidate = true;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    if (shouldInvalidate) {
-      console.log('[DOM Cache] Detected DOM mutation, invalidating cache');
-      invalidateCache();
-    }
-  });
-
-  // Observe the entire document body for changes
-  mutationObserver.observe(document.body, {
-    childList: true,    // Watch for added/removed elements
-    subtree: true,      // Watch all descendants
-    attributes: false,  // Don't watch attribute changes (too noisy)
-    characterData: false // Don't watch text changes (too noisy)
-  });
-
-  autoInvalidationEnabled = true;
-  console.log('[DOM Cache] Auto-invalidation enabled');
-}
-
-/**
- * Disable automatic cache invalidation
- * Call this during cleanup or if you want manual control
- */
-export function disableAutoInvalidation() {
-  if (mutationObserver) {
-    mutationObserver.disconnect();
-    mutationObserver = null;
-  }
-  autoInvalidationEnabled = false;
-  console.log('[DOM Cache] Auto-invalidation disabled');
-}
+let visibilityChangeHandler = null;
+let beforeUnloadHandler = null;
 
 /**
  * Register event-based invalidation triggers
@@ -228,27 +173,31 @@ export function disableAutoInvalidation() {
 export function registerInvalidationTriggers() {
   // Idempotence guard - prevent duplicate registration
   if (triggersRegistered) {
-    console.warn('[DOM Cache] Invalidation triggers already registered');
+    if (DEBUG) console.warn('[DOM Cache] Invalidation triggers already registered');
     return;
   }
 
-  // Invalidate cache on page visibility changes (e.g., tab switch, reload)
-  document.addEventListener('visibilitychange', () => {
+  // Create handler functions and store references for cleanup
+  visibilityChangeHandler = () => {
     if (!document.hidden) {
       // Page became visible again - invalidate to ensure fresh references
-      console.log('[DOM Cache] Page visible, invalidating cache');
+      if (DEBUG) console.log('[DOM Cache] Page visible, invalidating cache');
       invalidateCache();
     }
-  });
+  };
+
+  beforeUnloadHandler = () => {
+    invalidateCache();
+  };
+
+  // Invalidate cache on page visibility changes (e.g., tab switch, reload)
+  document.addEventListener('visibilitychange', visibilityChangeHandler);
 
   // Invalidate cache before page unload (cleanup)
-  window.addEventListener('beforeunload', () => {
-    invalidateCache();
-    disableAutoInvalidation();
-  });
+  window.addEventListener('beforeunload', beforeUnloadHandler);
 
   triggersRegistered = true;
-  console.log('[DOM Cache] Invalidation triggers registered');
+  if (DEBUG) console.log('[DOM Cache] Invalidation triggers registered');
 }
 
 /**
@@ -295,10 +244,21 @@ export function getCacheStats() {
  * @private
  */
 export function _resetForTesting() {
-  triggersRegistered = false;
-  autoInvalidationEnabled = false;
-  if (mutationObserver) {
-    mutationObserver.disconnect();
-    mutationObserver = null;
+  // Remove event listeners if they were registered
+  if (triggersRegistered) {
+    if (visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', visibilityChangeHandler);
+      visibilityChangeHandler = null;
+    }
+    if (beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+      beforeUnloadHandler = null;
+    }
   }
+
+  // Reset flags
+  triggersRegistered = false;
+
+  // Clear cache
+  invalidateCache();
 }
