@@ -16,8 +16,12 @@ export const KEYBOARD = {
   /**
    * How often to poll keyboard state (milliseconds)
    * Used by KeyboardManager for state monitoring
+   *
+   * Optimized from 50ms (20 calls/sec) to 250ms (4 calls/sec)
+   * This reduces polling frequency by 80% while event listeners
+   * provide immediate responsiveness for focus changes.
    */
-  STATE_CHECK_INTERVAL: 50,
+  STATE_CHECK_INTERVAL: 250,
 
   /**
    * Debounce delay for focus events (milliseconds)
