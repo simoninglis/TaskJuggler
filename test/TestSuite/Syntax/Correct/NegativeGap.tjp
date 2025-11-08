@@ -1,0 +1,26 @@
+project prj "Negative Gap Example" "1.0" 2005-05-29 - 2005-07-01 {
+  timezone "America/Denver"
+}
+
+task t1 "Task 1" {
+  start 2005-05-29
+  duration 10d
+}
+
+task t2 "Task 2 with negative gapduration" {
+  # Can start 5 calendar days before t1 ends (overlap)
+  depends !t1 { onend gapduration -5d }
+  duration 3d
+}
+
+task t3 "Task 3 with negative gaplength" {
+  # Can start 2 working days before t1 ends (overlap)
+  depends !t1 { onend gaplength -2d }
+  duration 3d
+}
+
+task t4 "Task 4 with positive gap" {
+  # Starts 2 working days after t1 ends (traditional gap)
+  depends !t1 { onend gaplength 2d }
+  duration 3d
+}

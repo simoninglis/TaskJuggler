@@ -1,0 +1,13 @@
+project prj "Zero Gap Duration Test" "1.0" 2005-05-29 - 2005-07-01 {
+  timezone "America/Denver"
+}
+
+task t1 "Task 1" {
+  start 2005-05-29
+  duration 5d
+}
+
+task t2 "Task 2" {
+# MARK: error 12 zero_duration
+  depends !t1 { gapduration 0d }
+}

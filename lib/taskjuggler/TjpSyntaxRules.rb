@@ -6018,26 +6018,40 @@ EOT
     optional
     repeatable
 
-    pattern(%w( _gapduration !intervalDuration ), lambda {
-      @taskDependency.gapDuration = @val[1]
+    pattern(%w( _gapduration !optionalMinus !intervalDuration ), lambda {
+      duration = (@val[1] ? -1 : 1) * @val[2]
+      if duration == 0
+        error('zero_duration', "The interval duration may not be 0.")
+      end
+      @taskDependency.gapDuration = duration
     })
     doc('gapduration', <<'EOT'
 Specifies the minimum required gap between the start or end of a preceding
 task and the start of this task, or the start or end of a following task and
 the end of this task. This is calendar time, not working time. 7d means one
-week.
+week. Negative values allow tasks to overlap, e.g., -5d means the task can
+start 5 days before the predecessor ends.
 EOT
        )
 
-    pattern(%w( _gaplength !nonZeroWorkingDuration ), lambda {
-      @taskDependency.gapLength = @val[1]
+    pattern(%w( _gaplength !optionalMinus !workingDuration ), lambda {
+      slots = (@val[1] ? -1 : 1) * @val[2]
+      if slots == 0
+        error('working_duration_too_small',
+              "Duration values must be at least " +
+              "#{@project['scheduleGranularity'] / 60} minutes " +
+              "(your timingresolution) long.")
+      end
+      @taskDependency.gapLength = slots
     })
     doc('gaplength', <<'EOT'
 Specifies the minimum required gap between the start or end of a preceding
 task and the start of this task, or the start or end of a following task and
 the end of this task. This is working time, not calendar time. 7d means 7
 working days, not one week. Whether a day is considered a working day or not
-depends on the defined working hours and global leaves.
+depends on the defined working hours and global leaves. Negative values allow
+tasks to overlap, e.g., -2d means the task can start 2 working days before
+the predecessor ends.
 EOT
        )
 
