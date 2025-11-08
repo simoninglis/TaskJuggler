@@ -3,6 +3,8 @@ benchmarks/icons
 benchmarks/scripts
 CHANGELOG
 doc
+Gemfile
+Gemfile.lock
 lib/css
 lib/*.html
 lib/icons
