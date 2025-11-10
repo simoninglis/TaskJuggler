@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+
+# Base image supplying Ruby for TaskJuggler worker jobs (bump to 3.4+ when officially published)
+FROM ruby:3.3
+
+WORKDIR /app
+
+# Copy TaskJuggler sources
+COPY . /app
+
+# Install TaskJuggler dependencies (mail and term-ansicolor) and runner dependencies
+RUN gem install bundler \
+    && gem install mail -v '~> 2.7' \
+    && gem install term-ansicolor -v '~> 1.7' \
+    && cd runner \
+    && bundle install
+
+ENV BUNDLE_GEMFILE=/app/runner/Gemfile
+# Add TaskJuggler lib to Ruby load path so tj3 can find its modules
+ENV RUBYLIB=/app/lib
+
+# Default command runs the Sinatra runner app via rackup
+ENV RUNNER_PORT=4567
+# Configure Rack 3 HostAuthorization to permit all hosts (for development)
+ENV RACK_HOST_AUTHORIZATION_PERMITTED_HOSTS="*"
+EXPOSE 4567
+WORKDIR /app/runner
+CMD ["bundle", "exec", "rackup", "-E", "none", "-o", "0.0.0.0", "-p", "4567"]
