@@ -1,0 +1,45 @@
+# TaskJuggler - CI Pipeline
+#
+# Fast unit tests and RSpec tests
+# Runs on every push and pull request
+#
+# For full integration tests, see taskjuggler-suite repo
+
+name: CI
+
+on:
+  push:
+    branches: [main, feature/phase2-code-organization]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Ruby dependencies
+        run: |
+          echo "=== Installing Dependencies ==="
+          bundle install
+
+      - name: Run unit tests
+        run: |
+          echo "=== Running Unit Tests ==="
+          bundle exec rake unittest
+
+      - name: Run RSpec tests
+        run: |
+          echo "=== Running RSpec Tests ==="
+          bundle exec rake spec
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "=== Test Summary ==="
+          echo "Unit tests and RSpec tests completed"
+          echo "For full integration tests, see taskjuggler-suite repository"
